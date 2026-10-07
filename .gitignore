@@ -1,0 +1,7 @@
+# Build folders
+build/
+build*
+
+# SO
+.DS_Store
+.env
