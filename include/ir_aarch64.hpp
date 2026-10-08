@@ -14,6 +14,9 @@ enum class CodigoOperacionAArch64 {
     Mov,      // Copia o carga (mov)
     Add,      // Suma con destino explicito (add)
     Sub,      // Resta con destino explicito (sub)
+    And,      // Operacion logica AND (and)
+    Orr,      // Operacion logica OR (orr)
+    Eor,      // Operacion logica XOR (eor)
     Ret       // Retorno de funcion (ret)
 };
 

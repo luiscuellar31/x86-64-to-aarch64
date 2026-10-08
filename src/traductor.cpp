@@ -107,6 +107,78 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
         return instAArch;
     }
 
+    // Caso D: and
+    if (instruccion.esInstruccion(CodigoOperacion::And)) {
+        InstruccionAArch64 instAArch(CodigoOperacionAArch64::And, instruccion.numeroLinea);
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+
+        if (opFuente.esRegistro()) {
+            std::string regFuenteAArch = obtenerEquivalenteAArch64(opFuente.valor);
+            instAArch.agregarOperando(OperandoAArch64::crearRegistro(regFuenteAArch));
+
+            mapeoSalida.reglaId = "LOGIC_AND_REG";
+            mapeoSalida.explicacionCorta = "Operacion logica AND bit a bit con tres operandos explicitos en AArch64.";
+        } else {
+            instAArch.agregarOperando(OperandoAArch64::crearInmediato(opFuente.valor, opFuente.valorNumerico));
+
+            mapeoSalida.reglaId = "LOGIC_AND_IMM";
+            mapeoSalida.explicacionCorta = "Operacion logica AND bit a bit con constante inmediata en AArch64.";
+        }
+
+        mapeoSalida.codigoOrigen = "and " + regDestinoX86 + ", " + opFuente.valor;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
+    // Caso E: or
+    if (instruccion.esInstruccion(CodigoOperacion::Or)) {
+        InstruccionAArch64 instAArch(CodigoOperacionAArch64::Orr, instruccion.numeroLinea);
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+
+        if (opFuente.esRegistro()) {
+            std::string regFuenteAArch = obtenerEquivalenteAArch64(opFuente.valor);
+            instAArch.agregarOperando(OperandoAArch64::crearRegistro(regFuenteAArch));
+
+            mapeoSalida.reglaId = "LOGIC_OR_REG";
+            mapeoSalida.explicacionCorta = "Operacion logica OR inclusiva bit a bit; en AArch64 el mnemonico es 'orr' con tres operandos explicitos.";
+        } else {
+            instAArch.agregarOperando(OperandoAArch64::crearInmediato(opFuente.valor, opFuente.valorNumerico));
+
+            mapeoSalida.reglaId = "LOGIC_OR_IMM";
+            mapeoSalida.explicacionCorta = "Operacion logica OR inclusiva con constante inmediata; en AArch64 el mnemonico es 'orr'.";
+        }
+
+        mapeoSalida.codigoOrigen = "or " + regDestinoX86 + ", " + opFuente.valor;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
+    // Caso F: xor
+    if (instruccion.esInstruccion(CodigoOperacion::Xor)) {
+        InstruccionAArch64 instAArch(CodigoOperacionAArch64::Eor, instruccion.numeroLinea);
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+
+        if (opFuente.esRegistro()) {
+            std::string regFuenteAArch = obtenerEquivalenteAArch64(opFuente.valor);
+            instAArch.agregarOperando(OperandoAArch64::crearRegistro(regFuenteAArch));
+
+            mapeoSalida.reglaId = "LOGIC_XOR_REG";
+            mapeoSalida.explicacionCorta = "Operacion logica XOR (OR exclusiva); en AArch64 el mnemonico es 'eor' con tres operandos explicitos.";
+        } else {
+            instAArch.agregarOperando(OperandoAArch64::crearInmediato(opFuente.valor, opFuente.valorNumerico));
+
+            mapeoSalida.reglaId = "LOGIC_XOR_IMM";
+            mapeoSalida.explicacionCorta = "Operacion logica XOR con constante inmediata; en AArch64 el mnemonico es 'eor'.";
+        }
+
+        mapeoSalida.codigoOrigen = "xor " + regDestinoX86 + ", " + opFuente.valor;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
     // Por defecto
     InstruccionAArch64 desconocido(CodigoOperacionAArch64::Desconocido, instruccion.numeroLinea);
     mapeoSalida.reglaId = "DESCONOCIDO";

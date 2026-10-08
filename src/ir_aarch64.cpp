@@ -10,6 +10,12 @@ std::string codigoOperacionAArch64ATexto(CodigoOperacionAArch64 codigo) {
             return "add";
         case CodigoOperacionAArch64::Sub:
             return "sub";
+        case CodigoOperacionAArch64::And:
+            return "and";
+        case CodigoOperacionAArch64::Orr:
+            return "orr";
+        case CodigoOperacionAArch64::Eor:
+            return "eor";
         case CodigoOperacionAArch64::Ret:
             return "ret";
         case CodigoOperacionAArch64::Desconocido:

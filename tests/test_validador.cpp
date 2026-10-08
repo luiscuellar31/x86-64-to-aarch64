@@ -14,7 +14,13 @@ void probarCasosValidos() {
         AnalizadorSintactico::analizarTexto("add rax, 5", 4),
         AnalizadorSintactico::analizarTexto("sub rax, 1", 5),
         AnalizadorSintactico::analizarTexto("ret", 6),
-        AnalizadorSintactico::analizarTexto("inicio:", 7)
+        AnalizadorSintactico::analizarTexto("inicio:", 7),
+        AnalizadorSintactico::analizarTexto("and rax, rbx", 8),
+        AnalizadorSintactico::analizarTexto("and rax, 15", 9),
+        AnalizadorSintactico::analizarTexto("or rbx, rcx", 10),
+        AnalizadorSintactico::analizarTexto("or rbx, 1", 11),
+        AnalizadorSintactico::analizarTexto("xor rax, rax", 12),
+        AnalizadorSintactico::analizarTexto("xor rax, 255", 13)
     };
 
     bool resultado = Validador::validarPrograma(validas, gestor);
@@ -56,6 +62,12 @@ void probarOperandosInvertidos() {
     assert(res == false);
     assert(gestor.tieneErrores());
     assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    // Destino inmediato en operacion logica
+    GestorDiagnosticos gestorXor;
+    Instruccion instXorInvertida = AnalizadorSintactico::analizarTexto("xor 42, rax", 4);
+    assert(Validador::validarInstruccion(instXorInvertida, gestorXor) == false);
+    assert(gestorXor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     std::cout << "  -> Exito en rechazo de operandos invertidos.\n";
 }

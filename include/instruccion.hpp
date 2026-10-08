@@ -15,6 +15,9 @@ enum class CodigoOperacion {
     Mov,
     Add,
     Sub,
+    And,
+    Or,
+    Xor,
     Ret
 };
 

@@ -11,13 +11,21 @@ Este documento define la estrategia para manejar las diferencias entre el regist
 
 ---
 
-## 2. Política para la Etapa Inicial (V0)
+## 2. Política para la Etapa Inicial (V0 y Milestone 3.1)
 
-- Dado que en V0 no se soportan saltos condicionales, no existe dependencia posterior del estado de las banderas.
-- Por tanto, las instrucciones `add` y `sub` de x86-64 se traducen a sus versiones directas en AArch64:
-  - `add rax, 5`  ⟶  `add x0, x0, #5`
-  - `sub rax, rbx` ⟶  `sub x0, x0, x19`
-- Esto produce código más limpio y eficiente, evitando alteraciones innecesarias del estado de la CPU.
+- Dado que en esta fase no se soportan saltos condicionales dependientes de flags aritméticos/lógicos, no existe dependencia posterior del estado de las banderas.
+- **Aritmética básica (`add`, `sub`):**
+  - Se traducen a sus versiones directas en AArch64:
+    - `add rax, 5`  ⟶  `add x0, x0, #5`
+    - `sub rax, rbx` ⟶  `sub x0, x0, x19`
+- **Operaciones lógicas (`and`, `or`, `xor`):**
+  - En x86-64, estas operaciones limpian incondicionalmente `CF` y `OF` (los ponen en 0), y actualizan `ZF`, `SF` y `PF`.
+  - En AArch64, `and`, `orr` y `eor` preservan intacto el registro `NZCV`. Para actualizar banderas se requeriría `ands` (que actualiza `N` y `Z`, limpiando `C` y `V`), pero al no existir saltos dependientes, la emisión limpia sin sufijo `s` es la más eficiente y segura.
+  - Traducciones directas emitidas:
+    - `and rax, 15`   ⟶ `and x0, x0, #15`
+    - `or  rax, rbx`  ⟶ `orr x0, x0, x19`
+    - `xor rax, rax`  ⟶ `eor x0, x0, x0`
+- Esta decisión evita ruido de instrucciones y mutaciones innecesarias del estado de la CPU en el código generado.
 
 ---
 

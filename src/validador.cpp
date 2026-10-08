@@ -31,10 +31,13 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
         return true;
     }
 
-    // 4. Validar instrucciones de dos operandos (mov, add, sub)
+    // 4. Validar instrucciones de dos operandos (mov, add, sub, and, or, xor)
     if (instruccion.esInstruccion(CodigoOperacion::Mov) ||
         instruccion.esInstruccion(CodigoOperacion::Add) ||
-        instruccion.esInstruccion(CodigoOperacion::Sub)) {
+        instruccion.esInstruccion(CodigoOperacion::Sub) ||
+        instruccion.esInstruccion(CodigoOperacion::And) ||
+        instruccion.esInstruccion(CodigoOperacion::Or) ||
+        instruccion.esInstruccion(CodigoOperacion::Xor)) {
 
         std::string nombreMnemonic = codigoOperacionATexto(instruccion.codigoOperacion);
 

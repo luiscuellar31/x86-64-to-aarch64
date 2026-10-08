@@ -100,10 +100,47 @@ void probarRechazoProgramasInvalidos() {
     std::cout << "  -> Exito en rechazo y diagnosticos de casos invalidos.\n";
 }
 
+void probarTraduccionLogica() {
+    std::cout << "[Test] Probando traduccion de operaciones logicas (and, or, xor)...\n";
+
+    std::string codigo =
+        "and rax, rbx\n"
+        "and rax, 15\n"
+        "or rbx, rcx\n"
+        "or rbx, 1\n"
+        "xor rax, rax\n"
+        "xor rax, 255\n"
+        "ret\n";
+
+    ResultadoTraduccion res = Traductor::traducir(codigo);
+    assert(res.esExitoso());
+    assert(res.mapeos.size() == 7);
+
+    // Verificamos traducciones correctas en AArch64 (and, orr, eor)
+    assert(res.codigoGenerado.find("and x0, x0, x19") != std::string::npos);
+    assert(res.codigoGenerado.find("and x0, x0, #15") != std::string::npos);
+    assert(res.codigoGenerado.find("orr x19, x19, x4") != std::string::npos);
+    assert(res.codigoGenerado.find("orr x19, x19, #1") != std::string::npos);
+    assert(res.codigoGenerado.find("eor x0, x0, x0") != std::string::npos);
+    assert(res.codigoGenerado.find("eor x0, x0, #255") != std::string::npos);
+
+    // Verificamos IDs de reglas
+    assert(res.mapeos[0].reglaId == "LOGIC_AND_REG");
+    assert(res.mapeos[1].reglaId == "LOGIC_AND_IMM");
+    assert(res.mapeos[2].reglaId == "LOGIC_OR_REG");
+    assert(res.mapeos[3].reglaId == "LOGIC_OR_IMM");
+    assert(res.mapeos[4].reglaId == "LOGIC_XOR_REG");
+    assert(res.mapeos[5].reglaId == "LOGIC_XOR_IMM");
+    assert(res.mapeos[6].reglaId == "RET_SIMPLE");
+
+    std::cout << "  -> Exito en traduccion de operaciones logicas (and -> and, or -> orr, xor -> eor).\n";
+}
+
 int main() {
-    std::cout << "=== Pruebas de Traduccion de Extremo a Extremo (Milestone 3.0) ===\n";
+    std::cout << "=== Pruebas de Traduccion de Extremo a Extremo ===\n";
     probarTraduccionMovimiento();
     probarTraduccionAritmetica();
+    probarTraduccionLogica();
     probarTraduccionConEtiquetas();
     probarRechazoProgramasInvalidos();
     std::cout << "Todas las pruebas del traductor pasaron con exito.\n";

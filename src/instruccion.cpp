@@ -11,6 +11,12 @@ std::string codigoOperacionATexto(CodigoOperacion codigo) {
             return "add";
         case CodigoOperacion::Sub:
             return "sub";
+        case CodigoOperacion::And:
+            return "and";
+        case CodigoOperacion::Or:
+            return "or";
+        case CodigoOperacion::Xor:
+            return "xor";
         case CodigoOperacion::Ret:
             return "ret";
         case CodigoOperacion::Desconocido:
@@ -28,6 +34,15 @@ CodigoOperacion textoACodigoOperacion(const std::string& texto) {
     }
     if (texto == "sub") {
         return CodigoOperacion::Sub;
+    }
+    if (texto == "and") {
+        return CodigoOperacion::And;
+    }
+    if (texto == "or") {
+        return CodigoOperacion::Or;
+    }
+    if (texto == "xor") {
+        return CodigoOperacion::Xor;
     }
     if (texto == "ret") {
         return CodigoOperacion::Ret;
