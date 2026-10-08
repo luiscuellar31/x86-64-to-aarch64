@@ -11,6 +11,18 @@
 bool esRegistroX86(const std::string& nombre);
 
 /**
+ * @brief Comprueba si una cadena representa un subregistro de 32, 16 u 8 bits (ej. eax, ax, al).
+ * @param nombre Cadena con el nombre del registro.
+ * @return true si es un subregistro conocido, false en caso contrario.
+ */
+bool esSubregistroX86(const std::string& nombre);
+
+/**
+ * @brief Comprueba si es cualquier registro conocido de x86 (64-bit o subregistro).
+ */
+bool esRegistroX86Cualquiera(const std::string& nombre);
+
+/**
  * @brief Convierte el nombre de un registro a minusculas estandar.
  * @param nombre Cadena con el nombre del registro.
  * @return Nombre normalizado en minusculas.

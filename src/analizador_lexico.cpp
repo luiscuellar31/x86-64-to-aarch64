@@ -119,8 +119,8 @@ std::vector<Token> AnalizadorLexico::tokenizarLinea(const std::string& textoLine
 
             std::string palabra = textoLinea.substr(inicioIdentificador, indice - inicioIdentificador);
 
-            // Verificamos si la palabra es un registro conocido de x86-64
-            if (esRegistroX86(palabra)) {
+            // Verificamos si la palabra es un registro conocido de x86-64 (o subregistro)
+            if (esRegistroX86Cualquiera(palabra)) {
                 tokens.push_back(Token(TipoToken::Registro, normalizarNombreRegistro(palabra), numeroLinea, columnaActual));
             } else {
                 tokens.push_back(Token(TipoToken::Identificador, palabra, numeroLinea, columnaActual));
