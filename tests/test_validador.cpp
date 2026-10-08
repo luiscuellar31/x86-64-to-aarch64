@@ -183,6 +183,60 @@ void probarEtiquetasNoDefinidas() {
     std::cout << "  -> Exito en rechazo de salto a etiqueta no definida.\n";
 }
 
+void probarMemoriaLocal() {
+    std::cout << "[Test Gate] Probando validacion de memoria local controlada...\n";
+
+    // 1. Casos validos de memoria en mov
+    GestorDiagnosticos gestorValido;
+    std::vector<Instruccion> validas = {
+        AnalizadorSintactico::analizarTexto("mov rax, [rbp - 8]", 1),
+        AnalizadorSintactico::analizarTexto("mov [rbp - 16], rbx", 2),
+        AnalizadorSintactico::analizarTexto("mov rax, [rbp + 16]", 3),
+        AnalizadorSintactico::analizarTexto("mov rax, [rbp]", 4),
+        AnalizadorSintactico::analizarTexto("mov [rsp], rax", 5)
+    };
+    assert(Validador::validarPrograma(validas, gestorValido) == true);
+    assert(!gestorValido.tieneErrores());
+
+    // 2. Rechazo de memoria a memoria
+    GestorDiagnosticos gestorMemMem;
+    Instruccion instMemMem = AnalizadorSintactico::analizarTexto("mov [rbp - 8], [rbp - 16]", 6);
+    assert(Validador::validarInstruccion(instMemMem, gestorMemMem) == false);
+    assert(gestorMemMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    // 3. Rechazo de inmediato a memoria
+    GestorDiagnosticos gestorMemImm;
+    Instruccion instMemImm = AnalizadorSintactico::analizarTexto("mov [rbp - 8], 42", 7);
+    assert(Validador::validarInstruccion(instMemImm, gestorMemImm) == false);
+    assert(gestorMemImm.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    // 4. Rechazo de registro base de 32 bits (ebp)
+    GestorDiagnosticos gestorBase32;
+    Instruccion instBase32 = AnalizadorSintactico::analizarTexto("mov rax, [ebp - 8]", 8);
+    assert(Validador::validarInstruccion(instBase32, gestorBase32) == false);
+    assert(gestorBase32.obtenerTodos()[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
+
+    // 5. Rechazo de memoria en operacion aritmetica (add)
+    GestorDiagnosticos gestorAddMem;
+    Instruccion instAddMem = AnalizadorSintactico::analizarTexto("add rax, [rbp - 8]", 9);
+    assert(Validador::validarInstruccion(instAddMem, gestorAddMem) == false);
+    assert(gestorAddMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    // 6. Rechazo de memoria en operacion logica (xor)
+    GestorDiagnosticos gestorXorMem;
+    Instruccion instXorMem = AnalizadorSintactico::analizarTexto("xor [rbp - 8], rax", 10);
+    assert(Validador::validarInstruccion(instXorMem, gestorXorMem) == false);
+    assert(gestorXorMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    // 7. Rechazo de memoria en comparacion (cmp)
+    GestorDiagnosticos gestorCmpMem;
+    Instruccion instCmpMem = AnalizadorSintactico::analizarTexto("cmp rax, [rbp - 8]", 11);
+    assert(Validador::validarInstruccion(instCmpMem, gestorCmpMem) == false);
+    assert(gestorCmpMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    std::cout << "  -> Exito en validacion de memoria local.\n";
+}
+
 int main() {
     std::cout << "=== Pruebas Gate del Validador Semantico ===\n";
     probarCasosValidos();
@@ -192,6 +246,7 @@ int main() {
     probarFaltaOperandos();
     probarInstruccionDesconocida();
     probarEtiquetasNoDefinidas();
+    probarMemoriaLocal();
     std::cout << "Todas las condiciones Gate del validador pasaron con exito.\n";
     return 0;
 }

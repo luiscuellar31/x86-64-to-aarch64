@@ -15,6 +15,14 @@ std::string tipoTokenATexto(TipoToken tipo) {
             return "Coma";
         case TipoToken::DosPuntos:
             return "DosPuntos";
+        case TipoToken::CorcheteAbre:
+            return "CorcheteAbre";
+        case TipoToken::CorcheteCierra:
+            return "CorcheteCierra";
+        case TipoToken::Mas:
+            return "Mas";
+        case TipoToken::Menos:
+            return "Menos";
         case TipoToken::FinDeLinea:
             return "FinDeLinea";
         case TipoToken::Desconocido:
@@ -75,7 +83,20 @@ std::vector<Token> AnalizadorLexico::tokenizarLinea(const std::string& textoLine
             continue;
         }
 
-        // 5. Constantes inmediatas (numeros con o sin signo, decimales o hexadecimales)
+        // 5. Corchetes para memoria '[' y ']'
+        if (caracterActual == '[') {
+            tokens.push_back(Token(TipoToken::CorcheteAbre, "[", numeroLinea, columnaActual));
+            indice++;
+            continue;
+        }
+
+        if (caracterActual == ']') {
+            tokens.push_back(Token(TipoToken::CorcheteCierra, "]", numeroLinea, columnaActual));
+            indice++;
+            continue;
+        }
+
+        // 6. Constantes inmediatas (numeros con o sin signo, decimales o hexadecimales)
         bool esSignoConDigito = (caracterActual == '+' || caracterActual == '-') &&
                                 (indice + 1 < longitud) &&
                                 (std::isdigit(static_cast<unsigned char>(textoLinea[indice + 1])) != 0);
@@ -109,7 +130,20 @@ std::vector<Token> AnalizadorLexico::tokenizarLinea(const std::string& textoLine
             continue;
         }
 
-        // 6. Identificadores (mnemonicos, registros o etiquetas)
+        // 7. Simbolos individuales '+' y '-' (cuando no preceden directamente a un digito)
+        if (caracterActual == '+') {
+            tokens.push_back(Token(TipoToken::Mas, "+", numeroLinea, columnaActual));
+            indice++;
+            continue;
+        }
+
+        if (caracterActual == '-') {
+            tokens.push_back(Token(TipoToken::Menos, "-", numeroLinea, columnaActual));
+            indice++;
+            continue;
+        }
+
+        // 8. Identificadores (mnemonicos, registros o etiquetas)
         if (std::isalpha(static_cast<unsigned char>(caracterActual)) != 0 || caracterActual == '_') {
             size_t inicioIdentificador = indice;
             while (indice < longitud &&

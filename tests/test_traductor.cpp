@@ -187,12 +187,51 @@ void probarTraduccionComparacionYSaltos() {
     std::cout << "  -> Exito en traduccion de cmp y saltos (jmp->b, je->b.eq, etc.).\n";
 }
 
+void probarTraduccionMemoriaLocal() {
+    std::cout << "[Test] Probando traduccion de memoria local (mov con stack -> ldr/str)...\n";
+
+    std::string codigo =
+        "mov rax, [rbp - 8]\n"
+        "mov [rbp - 16], rbx\n"
+        "mov rcx, [rbp + 16]\n"
+        "mov [rbp], rdx\n"
+        "ret\n";
+
+    ResultadoTraduccion res = Traductor::traducir(codigo);
+    assert(res.esExitoso());
+    assert(!res.tieneErrores());
+    assert(res.mapeos.size() == 5);
+
+    // 1. Carga con desplazamiento negativo: ldr x0, [x29, #-8]
+    assert(res.codigoGenerado.find("ldr x0, [x29, #-8]") != std::string::npos);
+    assert(res.mapeos[0].reglaId == "MEM_LOAD_STACK");
+
+    // 2. Almacenamiento con desplazamiento negativo: str x19, [x29, #-16]
+    assert(res.codigoGenerado.find("str x19, [x29, #-16]") != std::string::npos);
+    assert(res.mapeos[1].reglaId == "MEM_STORE_STACK");
+
+    // 3. Carga con desplazamiento positivo: ldr x4, [x29, #16]
+    assert(res.codigoGenerado.find("ldr x4, [x29, #16]") != std::string::npos);
+    assert(res.mapeos[2].reglaId == "MEM_LOAD_STACK");
+
+    // 4. Almacenamiento con desplazamiento cero: str x3, [x29]
+    assert(res.codigoGenerado.find("str x3, [x29]") != std::string::npos);
+    assert(res.mapeos[3].reglaId == "MEM_STORE_STACK");
+
+    // 5. Retorno
+    assert(res.codigoGenerado.find("ret") != std::string::npos);
+    assert(res.mapeos[4].reglaId == "RET_SIMPLE");
+
+    std::cout << "  -> Exito en traduccion de memoria local (ldr/str) a AArch64.\n";
+}
+
 int main() {
     std::cout << "=== Pruebas de Traduccion de Extremo a Extremo ===\n";
     probarTraduccionMovimiento();
     probarTraduccionAritmetica();
     probarTraduccionLogica();
     probarTraduccionComparacionYSaltos();
+    probarTraduccionMemoriaLocal();
     probarTraduccionConEtiquetas();
     probarRechazoProgramasInvalidos();
     std::cout << "Todas las pruebas del traductor pasaron con exito.\n";

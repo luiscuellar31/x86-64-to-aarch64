@@ -58,9 +58,113 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
         return true;
     }
 
-    // 5. Validar instrucciones de dos operandos (mov, add, sub, and, or, xor, cmp)
-    if (instruccion.esInstruccion(CodigoOperacion::Mov) ||
-        instruccion.esInstruccion(CodigoOperacion::Add) ||
+    // 5. Validar instruccion mov (soporta reg<-reg, reg<-imm, reg<-mem, mem<-reg)
+    if (instruccion.esInstruccion(CodigoOperacion::Mov)) {
+        if (instruccion.cantidadOperandos() < 2) {
+            gestor.agregarError(CodigosDiagnostico::kFaltanOperandos, linea,
+                                "la instruccion 'mov' requiere 2 operandos (destino, fuente)");
+            return false;
+        }
+
+        if (instruccion.cantidadOperandos() > 2) {
+            gestor.agregarError(CodigosDiagnostico::kExcesoOperandos, linea,
+                                "la instruccion 'mov' admite un maximo de 2 operandos en x86-64");
+            return false;
+        }
+
+        const Operando& opDestino = instruccion.operando(0);
+        const Operando& opFuente = instruccion.operando(1);
+
+        // Operando 0: Destino (registro o memoria)
+        if (opDestino.esInmediato()) {
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "el destino de 'mov' no puede ser una constante inmediata");
+            return false;
+        }
+
+        if (opDestino.esRegistro()) {
+            if (esSubregistroX86(opDestino.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro '" + opDestino.valor + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            if (!esRegistroX86(opDestino.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "el registro destino '" + opDestino.valor + "' no pertenece al subconjunto soportado de 64 bits");
+                return false;
+            }
+        } else if (opDestino.esMemoria()) {
+            if (esSubregistroX86(opDestino.memoria.registroBase)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro base '" + opDestino.memoria.registroBase + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            if (!esRegistroX86(opDestino.memoria.registroBase)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "el registro base '" + opDestino.memoria.registroBase + "' no pertenece al subconjunto soportado de 64 bits");
+                return false;
+            }
+        } else {
+            if (esSubregistroX86(opDestino.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro '" + opDestino.valor + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "el primer operando de 'mov' debe ser un registro de destino o una referencia a memoria");
+            return false;
+        }
+
+        // Operando 1: Fuente (registro, inmediato o memoria)
+        if (opFuente.esRegistro()) {
+            if (esSubregistroX86(opFuente.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro '" + opFuente.valor + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            if (!esRegistroX86(opFuente.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "el registro fuente '" + opFuente.valor + "' no pertenece al subconjunto soportado de 64 bits");
+                return false;
+            }
+        } else if (opFuente.esInmediato()) {
+            if (opDestino.esMemoria()) {
+                gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                    "no se admite almacenar una constante inmediata directamente en memoria en este subconjunto");
+                return false;
+            }
+        } else if (opFuente.esMemoria()) {
+            if (opDestino.esMemoria()) {
+                gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                    "no se admite transferencia directa de memoria a memoria en mov");
+                return false;
+            }
+            if (esSubregistroX86(opFuente.memoria.registroBase)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro base '" + opFuente.memoria.registroBase + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            if (!esRegistroX86(opFuente.memoria.registroBase)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "el registro base '" + opFuente.memoria.registroBase + "' no pertenece al subconjunto soportado de 64 bits");
+                return false;
+            }
+        } else {
+            if (esSubregistroX86(opFuente.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro '" + opFuente.valor + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "el operando fuente de 'mov' debe ser un registro, un valor inmediato o una referencia a memoria");
+            return false;
+        }
+
+        return true;
+    }
+
+    // 6. Validar instrucciones de dos operandos aritmeticas y logicas (add, sub, and, or, xor, cmp)
+    if (instruccion.esInstruccion(CodigoOperacion::Add) ||
         instruccion.esInstruccion(CodigoOperacion::Sub) ||
         instruccion.esInstruccion(CodigoOperacion::And) ||
         instruccion.esInstruccion(CodigoOperacion::Or) ||
@@ -82,8 +186,17 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
             return false;
         }
 
-        // Operando 0: Destino (debe ser obligatoriamente un registro de 64 bits)
         const Operando& opDestino = instruccion.operando(0);
+        const Operando& opFuente = instruccion.operando(1);
+
+        // En este subconjunto, memoria no esta admitida en operaciones aritmeticas ni logicas
+        if (opDestino.esMemoria() || opFuente.esMemoria()) {
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "la instruccion '" + nombreMnemonic + "' no admite operandos de memoria en este subconjunto");
+            return false;
+        }
+
+        // Operando 0: Destino (debe ser obligatoriamente un registro de 64 bits)
         if (opDestino.esInmediato()) {
             gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
                                 "el destino de '" + nombreMnemonic + "' no puede ser una constante inmediata");
@@ -113,7 +226,6 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
         }
 
         // Operando 1: Fuente (puede ser registro de 64 bits o inmediato numérico)
-        const Operando& opFuente = instruccion.operando(1);
         if (opFuente.esRegistro()) {
             if (esSubregistroX86(opFuente.valor)) {
                 gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,

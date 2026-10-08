@@ -25,6 +25,8 @@ enum class CodigoOperacionAArch64 {
     BLe,      // Salto condicional si menor o igual con signo (b.le)
     BGt,      // Salto condicional si mayor con signo (b.gt)
     BGe,      // Salto condicional si mayor o igual con signo (b.ge)
+    Ldr,      // Carga desde memoria a registro (ldr)
+    Str,      // Almacenamiento desde registro a memoria (str)
     Ret       // Retorno de funcion (ret)
 };
 
@@ -40,7 +42,20 @@ enum class TipoOperandoAArch64 {
     Desconocido,
     Registro,  // Registros de 64 bits (x0-x30, sp, xzr)
     Inmediato, // Constante con prefijo '#' (ej. #5, #0x1f)
-    Etiqueta   // Simbolo de destino de salto o referencia
+    Etiqueta,  // Simbolo de destino de salto o referencia
+    Memoria    // Direccionamiento indirecto de memoria (ej. [x29, #-8])
+};
+
+/**
+ * @brief Representa un operando de memoria en AArch64 (ej. [x29, #-8]).
+ */
+struct OperandoMemoriaAArch64 {
+    std::string registroBase;
+    int64_t desplazamiento;
+
+    OperandoMemoriaAArch64();
+    OperandoMemoriaAArch64(const std::string& base, int64_t desp = 0);
+    std::string emitirTexto() const;
 };
 
 /**
@@ -50,18 +65,23 @@ struct OperandoAArch64 {
     TipoOperandoAArch64 tipo;
     std::string valor;
     int64_t valorNumerico;
+    OperandoMemoriaAArch64 memoria;
 
     OperandoAArch64();
     OperandoAArch64(TipoOperandoAArch64 tipoOp, const std::string& valorTexto, int64_t valorNum = 0);
+    OperandoAArch64(const OperandoMemoriaAArch64& opMemoria);
 
     bool esRegistro() const;
     bool esInmediato() const;
     bool esEtiqueta() const;
+    bool esMemoria() const;
 
     static OperandoAArch64 crearRegistro(const std::string& nombreRegistro);
     static OperandoAArch64 crearInmediato(int64_t valorNum);
     static OperandoAArch64 crearInmediato(const std::string& valorTexto, int64_t valorNum);
     static OperandoAArch64 crearEtiqueta(const std::string& nombreEtiqueta);
+    static OperandoAArch64 crearMemoria(const std::string& registroBase, int64_t desplazamiento = 0);
+    static OperandoAArch64 crearMemoria(const OperandoMemoriaAArch64& opMemoria);
 
     // Formatea el operando para su emision en ensamblador AArch64 (ej. anteponiendo '#' a inmediatos)
     std::string emitirTexto() const;

@@ -46,7 +46,8 @@ enum class TipoOperando {
     Desconocido,
     Registro,
     Inmediato,
-    Etiqueta
+    Etiqueta,
+    Memoria
 };
 
 /**
@@ -55,12 +56,26 @@ enum class TipoOperando {
 std::string tipoOperandoATexto(TipoOperando tipo);
 
 /**
+ * @brief Representa un operando de memoria x86-64 estructurado (ej. [rbp - 8]).
+ */
+struct OperandoMemoria {
+    std::string registroBase;
+    int64_t desplazamiento;
+    int anchoBits;
+
+    OperandoMemoria();
+    OperandoMemoria(const std::string& base, int64_t desp = 0, int ancho = 64);
+    std::string aTexto() const;
+};
+
+/**
  * @brief Representa un operando individual dentro de una instrucción x86-64 con datos semanticos.
  */
 struct Operando {
     TipoOperando tipo;
     std::string valor;
     int64_t valorNumerico; // Valor parsed si es inmediato numerico
+    OperandoMemoria memoria; // Estructura detallada cuando tipo == TipoOperando::Memoria
 
     // Constructor por defecto
     Operando();
@@ -68,16 +83,22 @@ struct Operando {
     // Constructor con tipo y valor
     Operando(TipoOperando tipoOperando, const std::string& valorTexto, int64_t valorNum = 0);
 
+    // Constructor para operando de memoria
+    Operando(const OperandoMemoria& opMemoria);
+
     // Metodos semanticos de consulta
     bool esRegistro() const;
     bool esInmediato() const;
     bool esEtiqueta() const;
+    bool esMemoria() const;
 
     // Métodos auxiliares para crear operandos de forma clara
     static Operando crearRegistro(const std::string& nombreRegistro);
     static Operando crearInmediato(const std::string& valorInmediato);
     static Operando crearInmediato(int64_t valorNum);
     static Operando crearEtiqueta(const std::string& nombreEtiqueta);
+    static Operando crearMemoria(const std::string& registroBase, int64_t desplazamiento = 0, int anchoBits = 64);
+    static Operando crearMemoria(const OperandoMemoria& opMemoria);
 
     // Representación textual para depuración o explicaciones didácticas
     std::string aTexto() const;

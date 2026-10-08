@@ -89,11 +89,58 @@ void probarAnalisisProgramaCompleto() {
     std::cout << "  -> Exito en analisis de programa completo.\n";
 }
 
+void probarAnalisisOperandosMemoria() {
+    std::cout << "[Test] Probando analisis de operandos de memoria estructurados...\n";
+
+    // 1. mov rax, [rbp - 8]
+    Instruccion instLoad = AnalizadorSintactico::analizarTexto("mov rax, [rbp - 8]", 1);
+    assert(instLoad.codigoOperacion == CodigoOperacion::Mov);
+    assert(instLoad.operandos.size() == 2);
+    assert(instLoad.operandos[0].esRegistro() && instLoad.operandos[0].valor == "rax");
+    assert(instLoad.operandos[1].esMemoria());
+    assert(instLoad.operandos[1].memoria.registroBase == "rbp");
+    assert(instLoad.operandos[1].memoria.desplazamiento == -8);
+    assert(instLoad.operandos[1].memoria.anchoBits == 64);
+
+    // 2. mov [rbp - 16], rbx
+    Instruccion instStore = AnalizadorSintactico::analizarTexto("mov [rbp - 16], rbx", 2);
+    assert(instStore.codigoOperacion == CodigoOperacion::Mov);
+    assert(instStore.operandos.size() == 2);
+    assert(instStore.operandos[0].esMemoria());
+    assert(instStore.operandos[0].memoria.registroBase == "rbp");
+    assert(instStore.operandos[0].memoria.desplazamiento == -16);
+    assert(instStore.operandos[1].esRegistro() && instStore.operandos[1].valor == "rbx");
+
+    // 3. mov rax, [rbp + 32]
+    Instruccion instPositivo = AnalizadorSintactico::analizarTexto("mov rax, [rbp + 32]", 3);
+    assert(instPositivo.operandos[1].esMemoria());
+    assert(instPositivo.operandos[1].memoria.desplazamiento == 32);
+
+    // 4. mov rax, [rbp] (desplazamiento cero)
+    Instruccion instCero = AnalizadorSintactico::analizarTexto("mov rax, [rbp]", 4);
+    assert(instCero.operandos[1].esMemoria());
+    assert(instCero.operandos[1].memoria.desplazamiento == 0);
+
+    // 5. mov rax, [rbp-8] (sin espacios)
+    Instruccion instCompacto = AnalizadorSintactico::analizarTexto("mov rax, [rbp-8]", 5);
+    assert(instCompacto.operandos[1].esMemoria());
+    assert(instCompacto.operandos[1].memoria.desplazamiento == -8);
+
+    // 6. clasificarOperando individual
+    Operando opMem = AnalizadorSintactico::clasificarOperando("[rbp - 24]");
+    assert(opMem.esMemoria());
+    assert(opMem.memoria.registroBase == "rbp");
+    assert(opMem.memoria.desplazamiento == -24);
+
+    std::cout << "  -> Exito en analisis de operandos de memoria.\n";
+}
+
 int main() {
-    std::cout << "=== Pruebas unitarias de AnalizadorSintactico (Fase 2, Subfase 2) ===\n";
+    std::cout << "=== Pruebas unitarias de AnalizadorSintactico ===\n";
     probarAnalisisInstruccionesBasicas();
     probarAnalisisEtiquetas();
     probarAnalisisProgramaCompleto();
+    probarAnalisisOperandosMemoria();
     std::cout << "Todas las pruebas del analizador sintactico pasaron con exito.\n";
     return 0;
 }

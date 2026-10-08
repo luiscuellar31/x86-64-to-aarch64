@@ -18,6 +18,8 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `mov` | `reg, reg` | Soportado (V0) | No | `mov xD, xS` | Copia directa de registro a registro de 64 bits. |
 | `mov` | `reg, imm` | Soportado (V0) | No | `mov xD, #imm` | Carga de constante inmediata en registro. |
+| `mov` | `reg, [rbp - imm]` | Soportado (M3.3) | No | `ldr xD, [x29, #-imm]` | Carga desde memoria local del stack (`ldr`) con base `x29`. |
+| `mov` | `[rbp - imm], reg` | Soportado (M3.3) | No | `str xS, [x29, #-imm]` | Almacenamiento en memoria local del stack (`str`) con base `x29`. En AArch64 `str`, el registro fuente va primero. |
 | `add` | `reg, reg` | Soportado (V0) | Sí | `add xD, xD, xS` | x86 usa destino destructivo de 2 operandos; AArch64 expresa 3 operandos (`destino, fuente1, fuente2`). |
 | `add` | `reg, imm` | Soportado (V0) | Sí | `add xD, xD, #imm` | Suma inmediata con destino explícito. |
 | `sub` | `reg, reg` | Soportado (V0) | Sí | `sub xD, xD, xS` | Resta de registros (`xD = xD - xS`). |
@@ -45,6 +47,6 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 
 | Instrucción x86-64 | Forma | Estado | Afecta Flags x86 | Equivalente AArch64 | Notas |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `mov` | `reg, [rbp - imm]` | Planificado (M3.3) | No | `ldr xD, [x29, #-imm]` | Carga desde marco de pila local. |
-| `mov` | `[rbp - imm], reg` | Planificado (M3.3) | No | `str xS, [x29, #-imm]` | Almacenamiento en marco de pila local. |
-| `call` | `etiqueta` | Planificado (M3.4) | Sí/No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30`. |
+| `push` | `reg` | Planificado (M3.4) | No | `str reg, [sp, #-16]!` | Gestión de marco de pila con pre-indexado. |
+| `pop` | `reg` | Planificado (M3.4) | No | `ldr reg, [sp], #16` | Restauración de registro con post-indexado. |
+| `call` | `etiqueta` | Planificado (M3.4) | No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30`. |

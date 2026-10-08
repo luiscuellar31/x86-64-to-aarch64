@@ -70,10 +70,51 @@ void probarEmisionIRDeAArch64() {
     std::cout << "  -> Exito en construccion y emision de IR AArch64.\n";
 }
 
+void probarMemoriaIR() {
+    std::cout << "[Test] Probando operandos de memoria en IR x86-64 y AArch64...\n";
+
+    // 1. Operando x86-64 memoria negativa
+    Operando opMemNeg = Operando::crearMemoria("rbp", -8);
+    assert(opMemNeg.esMemoria());
+    assert(opMemNeg.memoria.registroBase == "rbp");
+    assert(opMemNeg.memoria.desplazamiento == -8);
+    assert(opMemNeg.memoria.anchoBits == 64);
+    assert(opMemNeg.aTexto() == "Memoria([rbp - 8])");
+
+    // 2. Operando x86-64 memoria positiva
+    Operando opMemPos = Operando::crearMemoria("rbp", 16);
+    assert(opMemPos.aTexto() == "Memoria([rbp + 16])");
+
+    // 3. Operando x86-64 memoria cero
+    Operando opMemCero = Operando::crearMemoria("rbp", 0);
+    assert(opMemCero.aTexto() == "Memoria([rbp])");
+
+    // 4. Instruccion AArch64 ldr x0, [x29, #-8]
+    InstruccionAArch64 instLdr(CodigoOperacionAArch64::Ldr, 10);
+    instLdr.agregarOperando(OperandoAArch64::crearRegistro("x0"));
+    instLdr.agregarOperando(OperandoAArch64::crearMemoria("x29", -8));
+    assert(instLdr.emitirTexto() == "ldr x0, [x29, #-8]");
+
+    // 5. Instruccion AArch64 str x19, [x29, #-16]
+    InstruccionAArch64 instStr(CodigoOperacionAArch64::Str, 11);
+    instStr.agregarOperando(OperandoAArch64::crearRegistro("x19"));
+    instStr.agregarOperando(OperandoAArch64::crearMemoria("x29", -16));
+    assert(instStr.emitirTexto() == "str x19, [x29, #-16]");
+
+    // 6. Instruccion AArch64 ldr x0, [x29] (desplazamiento cero)
+    InstruccionAArch64 instLdrCero(CodigoOperacionAArch64::Ldr, 12);
+    instLdrCero.agregarOperando(OperandoAArch64::crearRegistro("x0"));
+    instLdrCero.agregarOperando(OperandoAArch64::crearMemoria("x29", 0));
+    assert(instLdrCero.emitirTexto() == "ldr x0, [x29]");
+
+    std::cout << "  -> Exito en pruebas de memoria en IR.\n";
+}
+
 int main() {
-    std::cout << "=== Pruebas unitarias de IR / Representacion Intermedia (Fase 2, Subfase 4) ===\n";
+    std::cout << "=== Pruebas unitarias de IR / Representacion Intermedia ===\n";
     probarSemanticaOperandoX86();
     probarEmisionIRDeAArch64();
+    probarMemoriaIR();
     std::cout << "Todas las pruebas de la IR pasaron con exito.\n";
     return 0;
 }

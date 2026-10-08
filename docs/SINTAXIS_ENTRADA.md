@@ -50,10 +50,15 @@ bucle: add rax, 1
 
 ---
 
-## 5. Operandos de Memoria (Fuera de Alcance en V0)
+## 5. Operandos de Memoria Local Controlada
 
-- Los accesos a memoria mediante corchetes (ej. `[rax]`, `[rsp + 8]`, `qword ptr [...]`) están **fuera del alcance inicial** de V0/V1.
-- Cualquier instrucción con direccionamiento indirecto a memoria será rechazada en la fase de validación con un diagnóstico claro.
+- **Formato soportado:** Acceso a variables locales y marco de pila mediante direccionamiento base y desplazamiento constante: `[base]`, `[base - imm]`, `[base + imm]`.
+- **Registros base admitidos:** Registros de puntero de 64 bits (`rbp`, `rsp`).
+- **Ancho de palabra:** Accesos estándar de 64 bits hacia/desde registros enteros.
+- **Instrucción admitida:** Exclusivamente en `mov`:
+  - Carga (*load*): `mov reg, [rbp - imm]` → `ldr reg, [x29, #-imm]`
+  - Almacenamiento (*store*): `mov [rbp - imm], reg` → `str reg, [x29, #-imm]`
+- **Direccionamiento complejo fuera de alcance:** Formas con escalado, índice o direccionamiento relativo al puntero de instrucción (ej. `[rax + rbx*4 + 8]`, `[rip + etiqueta]`, `[base + index*scale + disp]`) son rechazadas en validación con diagnóstico tipificado `E014`. Tampoco se admite transferencia directa memoria a memoria (`mov mem, mem`) ni almacenar inmediatos directamente en memoria (`mov mem, imm`).
 
 ---
 

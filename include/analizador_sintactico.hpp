@@ -54,6 +54,14 @@ public:
      * @return Estructura Operando con su tipo y valor detectados.
      */
     static Operando clasificarOperando(const std::string& textoOperando);
+
+    /**
+     * @brief Analiza un operando de memoria estructurado delimitado por corchetes.
+     * @param tokens Vector de tokens de la instruccion.
+     * @param indice Indice actual dentro del vector (se actualiza al avanzar los tokens consumidos).
+     * @return Operando estructurado de tipo Memoria o Desconocido si hay error sintactico.
+     */
+    static Operando analizarOperandoMemoria(const std::vector<Token>& tokens, size_t& indice);
 };
 
 #endif // ANALIZADOR_SINTACTICO_HPP

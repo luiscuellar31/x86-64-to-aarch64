@@ -8,6 +8,10 @@ Operando AnalizadorSintactico::clasificarOperando(const std::string& textoOperan
     }
 
     const Token& primerToken = tokens[0];
+    if (primerToken.es(TipoToken::CorcheteAbre)) {
+        size_t indice = 0;
+        return analizarOperandoMemoria(tokens, indice);
+    }
     if (primerToken.es(TipoToken::Registro)) {
         return Operando::crearRegistro(primerToken.texto);
     }
@@ -18,6 +22,108 @@ Operando AnalizadorSintactico::clasificarOperando(const std::string& textoOperan
         return Operando::crearEtiqueta(primerToken.texto);
     }
     return Operando(TipoOperando::Desconocido, primerToken.texto);
+}
+
+Operando AnalizadorSintactico::analizarOperandoMemoria(const std::vector<Token>& tokens, size_t& indice) {
+    if (indice >= tokens.size() || !tokens[indice].es(TipoToken::CorcheteAbre)) {
+        return Operando(TipoOperando::Desconocido, "");
+    }
+
+    indice++; // Consumir '['
+    std::string textoReconstruido = "[";
+
+    if (indice >= tokens.size() || tokens[indice].es(TipoToken::FinDeLinea)) {
+        return Operando(TipoOperando::Desconocido, "[");
+    }
+
+    // Esperamos un registro base (o identificador)
+    if (!tokens[indice].es(TipoToken::Registro) && !tokens[indice].es(TipoToken::Identificador)) {
+        while (indice < tokens.size() && !tokens[indice].es(TipoToken::CorcheteCierra) && !tokens[indice].es(TipoToken::FinDeLinea)) {
+            textoReconstruido += tokens[indice].texto;
+            indice++;
+        }
+        if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
+            textoReconstruido += "]";
+            indice++;
+        }
+        return Operando(TipoOperando::Desconocido, textoReconstruido);
+    }
+
+    std::string registroBase = tokens[indice].texto;
+    textoReconstruido += registroBase;
+    indice++;
+
+    int64_t desplazamiento = 0;
+
+    // Caso 1: Cierre directo [rbp]
+    if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
+        indice++; // Consumir ']'
+        return Operando::crearMemoria(registroBase, 0, 64);
+    }
+
+    // Caso 2: Operador Mas o Menos explicito (ej. [rbp - 8], [rbp + 16])
+    if (indice < tokens.size() && (tokens[indice].es(TipoToken::Mas) || tokens[indice].es(TipoToken::Menos))) {
+        bool esResta = tokens[indice].es(TipoToken::Menos);
+        textoReconstruido += esResta ? " - " : " + ";
+        indice++;
+
+        if (indice < tokens.size() && tokens[indice].es(TipoToken::Inmediato)) {
+            int64_t valorNum = 0;
+            try {
+                valorNum = std::stoll(tokens[indice].texto, nullptr, 0);
+            } catch (...) {
+                valorNum = 0;
+            }
+            desplazamiento = esResta ? -valorNum : valorNum;
+            textoReconstruido += tokens[indice].texto;
+            indice++;
+        } else {
+            // Sintaxis invalida dentro del corchete
+            while (indice < tokens.size() && !tokens[indice].es(TipoToken::CorcheteCierra) && !tokens[indice].es(TipoToken::FinDeLinea)) {
+                textoReconstruido += tokens[indice].texto;
+                indice++;
+            }
+            if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
+                textoReconstruido += "]";
+                indice++;
+            }
+            return Operando(TipoOperando::Desconocido, textoReconstruido);
+        }
+    }
+    // Caso 3: Inmediato con signo ya incorporado (ej. [rbp-8] donde el lexer agrupo "-8")
+    else if (indice < tokens.size() && tokens[indice].es(TipoToken::Inmediato)) {
+        int64_t valorNum = 0;
+        try {
+            valorNum = std::stoll(tokens[indice].texto, nullptr, 0);
+        } catch (...) {
+            valorNum = 0;
+        }
+        desplazamiento = valorNum;
+        if (desplazamiento >= 0) {
+            textoReconstruido += " + " + std::to_string(desplazamiento);
+        } else {
+            textoReconstruido += " - " + std::to_string(-desplazamiento);
+        }
+        indice++;
+    }
+
+    // El token siguiente debe ser CorcheteCierra ']'
+    if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
+        indice++; // Consumir ']'
+        return Operando::crearMemoria(registroBase, desplazamiento, 64);
+    }
+
+    // Si hay tokens adicionales no soportados (ej. indexacion compleja [base+index*4])
+    while (indice < tokens.size() && !tokens[indice].es(TipoToken::CorcheteCierra) && !tokens[indice].es(TipoToken::FinDeLinea)) {
+        textoReconstruido += " " + tokens[indice].texto;
+        indice++;
+    }
+    if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
+        textoReconstruido += "]";
+        indice++;
+    }
+
+    return Operando(TipoOperando::Desconocido, textoReconstruido);
 }
 
 Instruccion AnalizadorSintactico::analizarTokens(const std::vector<Token>& tokens) {
@@ -71,6 +177,11 @@ Instruccion AnalizadorSintactico::analizarTokens(const std::vector<Token>& token
 
         if (tokenActual.es(TipoToken::Coma)) {
             indice++;
+            continue;
+        }
+
+        if (tokenActual.es(TipoToken::CorcheteAbre)) {
+            instruccion.agregarOperando(analizarOperandoMemoria(tokens, indice));
             continue;
         }
 

@@ -12,9 +12,13 @@ enum class TipoToken {
     Identificador, // Mnemonicos o nombres de etiquetas
     Registro,      // Registros x86-64 soportados (rax, rbx, etc.)
     Inmediato,     // Constantes numericas (decimales o hexadecimales)
-    Coma,          // ','
-    DosPuntos,     // ':'
-    FinDeLinea     // Fin de instruccion o linea
+    Coma,           // ','
+    DosPuntos,      // ':'
+    CorcheteAbre,   // '['
+    CorcheteCierra, // ']'
+    Mas,            // '+'
+    Menos,          // '-'
+    FinDeLinea      // Fin de instruccion o linea
 };
 
 /**

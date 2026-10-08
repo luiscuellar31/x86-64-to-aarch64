@@ -32,6 +32,10 @@ std::string codigoOperacionAArch64ATexto(CodigoOperacionAArch64 codigo) {
             return "b.gt";
         case CodigoOperacionAArch64::BGe:
             return "b.ge";
+        case CodigoOperacionAArch64::Ldr:
+            return "ldr";
+        case CodigoOperacionAArch64::Str:
+            return "str";
         case CodigoOperacionAArch64::Ret:
             return "ret";
         case CodigoOperacionAArch64::Desconocido:
@@ -40,12 +44,31 @@ std::string codigoOperacionAArch64ATexto(CodigoOperacionAArch64 codigo) {
     }
 }
 
+OperandoMemoriaAArch64::OperandoMemoriaAArch64()
+    : registroBase(""), desplazamiento(0) {
+}
+
+OperandoMemoriaAArch64::OperandoMemoriaAArch64(const std::string& base, int64_t desp)
+    : registroBase(base), desplazamiento(desp) {
+}
+
+std::string OperandoMemoriaAArch64::emitirTexto() const {
+    if (desplazamiento == 0) {
+        return "[" + registroBase + "]";
+    }
+    return "[" + registroBase + ", #" + std::to_string(desplazamiento) + "]";
+}
+
 OperandoAArch64::OperandoAArch64()
-    : tipo(TipoOperandoAArch64::Desconocido), valor(""), valorNumerico(0) {
+    : tipo(TipoOperandoAArch64::Desconocido), valor(""), valorNumerico(0), memoria() {
 }
 
 OperandoAArch64::OperandoAArch64(TipoOperandoAArch64 tipoOp, const std::string& valorTexto, int64_t valorNum)
-    : tipo(tipoOp), valor(valorTexto), valorNumerico(valorNum) {
+    : tipo(tipoOp), valor(valorTexto), valorNumerico(valorNum), memoria() {
+}
+
+OperandoAArch64::OperandoAArch64(const OperandoMemoriaAArch64& opMemoria)
+    : tipo(TipoOperandoAArch64::Memoria), valor(opMemoria.emitirTexto()), valorNumerico(0), memoria(opMemoria) {
 }
 
 bool OperandoAArch64::esRegistro() const {
@@ -58,6 +81,10 @@ bool OperandoAArch64::esInmediato() const {
 
 bool OperandoAArch64::esEtiqueta() const {
     return tipo == TipoOperandoAArch64::Etiqueta;
+}
+
+bool OperandoAArch64::esMemoria() const {
+    return tipo == TipoOperandoAArch64::Memoria;
 }
 
 OperandoAArch64 OperandoAArch64::crearRegistro(const std::string& nombreRegistro) {
@@ -76,7 +103,19 @@ OperandoAArch64 OperandoAArch64::crearEtiqueta(const std::string& nombreEtiqueta
     return OperandoAArch64(TipoOperandoAArch64::Etiqueta, nombreEtiqueta, 0);
 }
 
+OperandoAArch64 OperandoAArch64::crearMemoria(const std::string& registroBase, int64_t desplazamiento) {
+    OperandoMemoriaAArch64 mem(registroBase, desplazamiento);
+    return OperandoAArch64(mem);
+}
+
+OperandoAArch64 OperandoAArch64::crearMemoria(const OperandoMemoriaAArch64& opMemoria) {
+    return OperandoAArch64(opMemoria);
+}
+
 std::string OperandoAArch64::emitirTexto() const {
+    if (tipo == TipoOperandoAArch64::Memoria) {
+        return memoria.emitirTexto();
+    }
     if (tipo == TipoOperandoAArch64::Inmediato) {
         if (!valor.empty() && valor[0] == '#') {
             return valor;

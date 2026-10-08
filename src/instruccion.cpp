@@ -98,18 +98,42 @@ std::string tipoOperandoATexto(TipoOperando tipo) {
             return "Inmediato";
         case TipoOperando::Etiqueta:
             return "Etiqueta";
+        case TipoOperando::Memoria:
+            return "Memoria";
         case TipoOperando::Desconocido:
         default:
             return "Desconocido";
     }
 }
 
+OperandoMemoria::OperandoMemoria()
+    : registroBase(""), desplazamiento(0), anchoBits(64) {
+}
+
+OperandoMemoria::OperandoMemoria(const std::string& base, int64_t desp, int ancho)
+    : registroBase(base), desplazamiento(desp), anchoBits(ancho) {
+}
+
+std::string OperandoMemoria::aTexto() const {
+    if (desplazamiento == 0) {
+        return "[" + registroBase + "]";
+    }
+    if (desplazamiento > 0) {
+        return "[" + registroBase + " + " + std::to_string(desplazamiento) + "]";
+    }
+    return "[" + registroBase + " - " + std::to_string(-desplazamiento) + "]";
+}
+
 Operando::Operando()
-    : tipo(TipoOperando::Desconocido), valor(""), valorNumerico(0) {
+    : tipo(TipoOperando::Desconocido), valor(""), valorNumerico(0), memoria() {
 }
 
 Operando::Operando(TipoOperando tipoOperando, const std::string& valorTexto, int64_t valorNum)
-    : tipo(tipoOperando), valor(valorTexto), valorNumerico(valorNum) {
+    : tipo(tipoOperando), valor(valorTexto), valorNumerico(valorNum), memoria() {
+}
+
+Operando::Operando(const OperandoMemoria& opMemoria)
+    : tipo(TipoOperando::Memoria), valor(opMemoria.aTexto()), valorNumerico(0), memoria(opMemoria) {
 }
 
 bool Operando::esRegistro() const {
@@ -122,6 +146,10 @@ bool Operando::esInmediato() const {
 
 bool Operando::esEtiqueta() const {
     return tipo == TipoOperando::Etiqueta;
+}
+
+bool Operando::esMemoria() const {
+    return tipo == TipoOperando::Memoria;
 }
 
 Operando Operando::crearRegistro(const std::string& nombreRegistro) {
@@ -146,7 +174,19 @@ Operando Operando::crearEtiqueta(const std::string& nombreEtiqueta) {
     return Operando(TipoOperando::Etiqueta, nombreEtiqueta, 0);
 }
 
+Operando Operando::crearMemoria(const std::string& registroBase, int64_t desplazamiento, int anchoBits) {
+    OperandoMemoria mem(registroBase, desplazamiento, anchoBits);
+    return Operando(mem);
+}
+
+Operando Operando::crearMemoria(const OperandoMemoria& opMemoria) {
+    return Operando(opMemoria);
+}
+
 std::string Operando::aTexto() const {
+    if (tipo == TipoOperando::Memoria) {
+        return "Memoria(" + memoria.aTexto() + ")";
+    }
     return tipoOperandoATexto(tipo) + "(\"" + valor + "\")";
 }
 
@@ -217,6 +257,10 @@ void Instruccion::imprimir(std::ostream& salida) const {
                << " -> " << operandoActual.valor;
         if (operandoActual.esInmediato()) {
             salida << " (valor numerico: " << operandoActual.valorNumerico << ")";
+        } else if (operandoActual.esMemoria()) {
+            salida << " (base: " << operandoActual.memoria.registroBase
+                   << ", disp: " << operandoActual.memoria.desplazamiento
+                   << ", ancho: " << operandoActual.memoria.anchoBits << " bits)";
         }
         salida << "\n";
     }

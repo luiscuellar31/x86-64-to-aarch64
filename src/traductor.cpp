@@ -88,12 +88,47 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
     }
 
     // 4. Instrucciones de dos operandos (mov, add, sub, and, or, xor, cmp)
-    std::string regDestinoX86 = instruccion.operando(0).valor;
-    std::string regDestinoAArch = obtenerEquivalenteAArch64(regDestinoX86);
+    const Operando& opDestino = instruccion.operando(0);
     const Operando& opFuente = instruccion.operando(1);
+    std::string regDestinoX86 = opDestino.valor;
+    std::string regDestinoAArch = opDestino.esRegistro() ? obtenerEquivalenteAArch64(regDestinoX86) : "";
 
     // Caso A: mov
     if (instruccion.esInstruccion(CodigoOperacion::Mov)) {
+        if (opDestino.esRegistro() && opFuente.esMemoria()) {
+            // Carga de memoria a registro: ldr xD, [xN, #offset]
+            InstruccionAArch64 instAArch(CodigoOperacionAArch64::Ldr, instruccion.numeroLinea);
+            std::string regBaseAArch = obtenerEquivalenteAArch64(opFuente.memoria.registroBase);
+
+            instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+            instAArch.agregarOperando(OperandoAArch64::crearMemoria(regBaseAArch, opFuente.memoria.desplazamiento));
+
+            mapeoSalida.reglaId = "MEM_LOAD_STACK";
+            mapeoSalida.explicacionCorta = "Carga de memoria local del stack a registro (ldr) con direccion base " + regBaseAArch + ".";
+            mapeoSalida.codigoOrigen = "mov " + regDestinoX86 + ", " + opFuente.memoria.aTexto();
+            mapeoSalida.codigoDestino = instAArch.emitirTexto();
+            return instAArch;
+        }
+
+        if (opDestino.esMemoria() && opFuente.esRegistro()) {
+            // Almacenamiento de registro a memoria: str xS, [xN, #offset]
+            InstruccionAArch64 instAArch(CodigoOperacionAArch64::Str, instruccion.numeroLinea);
+            std::string regFuenteX86 = opFuente.valor;
+            std::string regFuenteAArch = obtenerEquivalenteAArch64(regFuenteX86);
+            std::string regBaseAArch = obtenerEquivalenteAArch64(opDestino.memoria.registroBase);
+
+            // En AArch64 str, el primer operando es el registro fuente y el segundo es la ubicacion de memoria destino
+            instAArch.agregarOperando(OperandoAArch64::crearRegistro(regFuenteAArch));
+            instAArch.agregarOperando(OperandoAArch64::crearMemoria(regBaseAArch, opDestino.memoria.desplazamiento));
+
+            mapeoSalida.reglaId = "MEM_STORE_STACK";
+            mapeoSalida.explicacionCorta = "Almacenamiento de registro a memoria local del stack (str) con direccion base " + regBaseAArch + ".";
+            mapeoSalida.codigoOrigen = "mov " + opDestino.memoria.aTexto() + ", " + regFuenteX86;
+            mapeoSalida.codigoDestino = instAArch.emitirTexto();
+            return instAArch;
+        }
+
+        // Movimiento a registro (reg <- reg o reg <- imm)
         InstruccionAArch64 instAArch(CodigoOperacionAArch64::Mov, instruccion.numeroLinea);
         instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
 
