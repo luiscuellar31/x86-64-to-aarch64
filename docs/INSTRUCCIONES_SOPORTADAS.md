@@ -39,6 +39,8 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 | `jle` | `etiqueta` | Soportado (M3.2) | No | `b.le etiqueta` | Salto condicional si menor o igual con signo (`ZF = 1` o `SF != OF`). |
 | `jg` | `etiqueta` | Soportado (M3.2) | No | `b.gt etiqueta` | Salto condicional si mayor con signo (`ZF = 0` y `SF == OF`). |
 | `jge` | `etiqueta` | Soportado (M3.2) | No | `b.ge etiqueta` | Salto condicional si mayor o igual con signo (`SF == OF`). |
+| `push` | `reg` | Soportado (M3.4) | No | `str xReg, [sp, #-16]!` | Almacenamiento con pre-indexado en pila preservando alineación de 16 bytes. |
+| `pop` | `reg` | Soportado (M3.4) | No | `ldr xReg, [sp], #16` | Carga con post-indexado desde pila restaurando alineación de 16 bytes. |
 | `ret` | *(sin operandos)* | Soportado (V0) | No | `ret` | Retorno de subrutina (en AArch64 salta a la dirección en `x30`/`lr`). |
 
 ---
@@ -47,6 +49,4 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 
 | Instrucción x86-64 | Forma | Estado | Afecta Flags x86 | Equivalente AArch64 | Notas |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `push` | `reg` | Planificado (M3.4) | No | `str reg, [sp, #-16]!` | Gestión de marco de pila con pre-indexado. |
-| `pop` | `reg` | Planificado (M3.4) | No | `ldr reg, [sp], #16` | Restauración de registro con post-indexado. |
-| `call` | `etiqueta` | Planificado (M3.4) | No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30`. |
+| `call` | `etiqueta` | Planificado (M3.5) | No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30` / `lr`. |

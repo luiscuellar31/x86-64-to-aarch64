@@ -45,14 +45,21 @@ std::string codigoOperacionAArch64ATexto(CodigoOperacionAArch64 codigo) {
 }
 
 OperandoMemoriaAArch64::OperandoMemoriaAArch64()
-    : registroBase(""), desplazamiento(0) {
+    : registroBase(""), desplazamiento(0), modo(ModoIndexadoAArch64::Offset) {
 }
 
-OperandoMemoriaAArch64::OperandoMemoriaAArch64(const std::string& base, int64_t desp)
-    : registroBase(base), desplazamiento(desp) {
+OperandoMemoriaAArch64::OperandoMemoriaAArch64(const std::string& base, int64_t desp, ModoIndexadoAArch64 modoIndex)
+    : registroBase(base), desplazamiento(desp), modo(modoIndex) {
 }
 
 std::string OperandoMemoriaAArch64::emitirTexto() const {
+    if (modo == ModoIndexadoAArch64::PreIndexado) {
+        return "[" + registroBase + ", #" + std::to_string(desplazamiento) + "]!";
+    }
+    if (modo == ModoIndexadoAArch64::PostIndexado) {
+        return "[" + registroBase + "], #" + std::to_string(desplazamiento);
+    }
+    // Offset regular
     if (desplazamiento == 0) {
         return "[" + registroBase + "]";
     }
@@ -103,8 +110,8 @@ OperandoAArch64 OperandoAArch64::crearEtiqueta(const std::string& nombreEtiqueta
     return OperandoAArch64(TipoOperandoAArch64::Etiqueta, nombreEtiqueta, 0);
 }
 
-OperandoAArch64 OperandoAArch64::crearMemoria(const std::string& registroBase, int64_t desplazamiento) {
-    OperandoMemoriaAArch64 mem(registroBase, desplazamiento);
+OperandoAArch64 OperandoAArch64::crearMemoria(const std::string& registroBase, int64_t desplazamiento, ModoIndexadoAArch64 modo) {
+    OperandoMemoriaAArch64 mem(registroBase, desplazamiento, modo);
     return OperandoAArch64(mem);
 }
 

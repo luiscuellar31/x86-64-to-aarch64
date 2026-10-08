@@ -237,6 +237,56 @@ void probarMemoriaLocal() {
     std::cout << "  -> Exito en validacion de memoria local.\n";
 }
 
+void probarInstruccionesStack() {
+    std::cout << "[Test Gate] Probando validacion de instrucciones de stack (push, pop)...\n";
+
+    // 1. Casos validos
+    GestorDiagnosticos gestorValido;
+    std::vector<Instruccion> validas = {
+        AnalizadorSintactico::analizarTexto("push rbp", 1),
+        AnalizadorSintactico::analizarTexto("push rbx", 2),
+        AnalizadorSintactico::analizarTexto("pop rbx", 3),
+        AnalizadorSintactico::analizarTexto("pop rbp", 4)
+    };
+    assert(Validador::validarPrograma(validas, gestorValido) == true);
+    assert(!gestorValido.tieneErrores());
+
+    // 2. Falta de operandos
+    GestorDiagnosticos gestorFaltaPush, gestorFaltaPop;
+    Instruccion instPushVacia = AnalizadorSintactico::analizarTexto("push", 5);
+    Instruccion instPopVacia = AnalizadorSintactico::analizarTexto("pop", 6);
+    assert(Validador::validarInstruccion(instPushVacia, gestorFaltaPush) == false);
+    assert(gestorFaltaPush.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
+    assert(Validador::validarInstruccion(instPopVacia, gestorFaltaPop) == false);
+    assert(gestorFaltaPop.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
+
+    // 3. Exceso de operandos
+    GestorDiagnosticos gestorExceso;
+    Instruccion instExceso = AnalizadorSintactico::analizarTexto("push rax, rbx", 7);
+    assert(Validador::validarInstruccion(instExceso, gestorExceso) == false);
+    assert(gestorExceso.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
+
+    // 4. Inmediato no permitido en este subconjunto
+    GestorDiagnosticos gestorImm;
+    Instruccion instPushImm = AnalizadorSintactico::analizarTexto("push 42", 8);
+    assert(Validador::validarInstruccion(instPushImm, gestorImm) == false);
+    assert(gestorImm.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    // 5. Subregistros de 32 bits
+    GestorDiagnosticos gestor32;
+    Instruccion instPush32 = AnalizadorSintactico::analizarTexto("push ebp", 9);
+    assert(Validador::validarInstruccion(instPush32, gestor32) == false);
+    assert(gestor32.obtenerTodos()[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
+
+    // 6. Memoria no permitida en push/pop
+    GestorDiagnosticos gestorMem;
+    Instruccion instPushMem = AnalizadorSintactico::analizarTexto("push [rbp - 8]", 10);
+    assert(Validador::validarInstruccion(instPushMem, gestorMem) == false);
+    assert(gestorMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    std::cout << "  -> Exito en validacion de push y pop.\n";
+}
+
 int main() {
     std::cout << "=== Pruebas Gate del Validador Semantico ===\n";
     probarCasosValidos();
@@ -247,6 +297,7 @@ int main() {
     probarInstruccionDesconocida();
     probarEtiquetasNoDefinidas();
     probarMemoriaLocal();
+    probarInstruccionesStack();
     std::cout << "Todas las condiciones Gate del validador pasaron con exito.\n";
     return 0;
 }

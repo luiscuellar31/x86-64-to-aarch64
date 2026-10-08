@@ -58,7 +58,62 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
         return true;
     }
 
-    // 5. Validar instruccion mov (soporta reg<-reg, reg<-imm, reg<-mem, mem<-reg)
+    // 5. Validar instrucciones de stack (push, pop)
+    if (instruccion.esStack()) {
+        std::string nombreMnemonic = codigoOperacionATexto(instruccion.codigoOperacion);
+
+        if (instruccion.cantidadOperandos() < 1) {
+            gestor.agregarError(CodigosDiagnostico::kFaltanOperandos, linea,
+                                "la instruccion '" + nombreMnemonic + "' requiere 1 operando (registro de 64 bits)");
+            return false;
+        }
+
+        if (instruccion.cantidadOperandos() > 1) {
+            gestor.agregarError(CodigosDiagnostico::kExcesoOperandos, linea,
+                                "la instruccion '" + nombreMnemonic + "' solo admite 1 operando en este subconjunto");
+            return false;
+        }
+
+        const Operando& op = instruccion.operando(0);
+
+        if (op.esInmediato()) {
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "la instruccion '" + nombreMnemonic + "' no admite constantes inmediatas en este subconjunto");
+            return false;
+        }
+
+        if (op.esMemoria()) {
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "la instruccion '" + nombreMnemonic + "' no admite operandos de memoria en este subconjunto");
+            return false;
+        }
+
+        if (op.esRegistro()) {
+            if (esSubregistroX86(op.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro '" + op.valor + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            if (!esRegistroX86(op.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "el registro '" + op.valor + "' no pertenece al subconjunto soportado de 64 bits");
+                return false;
+            }
+        } else {
+            if (esSubregistroX86(op.valor)) {
+                gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, linea,
+                                    "registro '" + op.valor + "' no soportado en modo solo 64 bits");
+                return false;
+            }
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "el operando de '" + nombreMnemonic + "' debe ser un registro de 64 bits");
+            return false;
+        }
+
+        return true;
+    }
+
+    // 6. Validar instruccion mov (soporta reg<-reg, reg<-imm, reg<-mem, mem<-reg)
     if (instruccion.esInstruccion(CodigoOperacion::Mov)) {
         if (instruccion.cantidadOperandos() < 2) {
             gestor.agregarError(CodigosDiagnostico::kFaltanOperandos, linea,

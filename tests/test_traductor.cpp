@@ -225,6 +225,46 @@ void probarTraduccionMemoriaLocal() {
     std::cout << "  -> Exito en traduccion de memoria local (ldr/str) a AArch64.\n";
 }
 
+void probarTraduccionStackYPrologoEpilogo() {
+    std::cout << "[Test] Probando traduccion de stack, prologo y epilogo (push/pop)...\n";
+
+    // 1. Prologo y epilogo canonico con rbp y rsp
+    std::string codigoPrologo =
+        "inicio:\n"
+        "    push rbp\n"
+        "    mov rbp, rsp\n"
+        "    mov rax, 42\n"
+        "    mov rsp, rbp\n"
+        "    pop rbp\n"
+        "    ret\n";
+
+    ResultadoTraduccion res1 = Traductor::traducir(codigoPrologo);
+    assert(res1.esExitoso());
+    assert(!res1.tieneErrores());
+
+    assert(res1.codigoGenerado.find("str x29, [sp, #-16]!") != std::string::npos);
+    assert(res1.codigoGenerado.find("mov x29, sp") != std::string::npos);
+    assert(res1.codigoGenerado.find("mov x0, #42") != std::string::npos);
+    assert(res1.codigoGenerado.find("mov sp, x29") != std::string::npos);
+    assert(res1.codigoGenerado.find("ldr x29, [sp], #16") != std::string::npos);
+    assert(res1.codigoGenerado.find("ret") != std::string::npos);
+
+    // 2. Preservacion de registro callee-saved (rbx -> x19)
+    std::string codigoCallee =
+        "push rbx\n"
+        "mov rbx, 10\n"
+        "pop rbx\n"
+        "ret\n";
+
+    ResultadoTraduccion res2 = Traductor::traducir(codigoCallee);
+    assert(res2.esExitoso());
+    assert(res2.codigoGenerado.find("str x19, [sp, #-16]!") != std::string::npos);
+    assert(res2.codigoGenerado.find("mov x19, #10") != std::string::npos);
+    assert(res2.codigoGenerado.find("ldr x19, [sp], #16") != std::string::npos);
+
+    std::cout << "  -> Exito en traduccion de prologo, epilogo y stack (push/pop).\n";
+}
+
 int main() {
     std::cout << "=== Pruebas de Traduccion de Extremo a Extremo ===\n";
     probarTraduccionMovimiento();
@@ -232,6 +272,7 @@ int main() {
     probarTraduccionLogica();
     probarTraduccionComparacionYSaltos();
     probarTraduccionMemoriaLocal();
+    probarTraduccionStackYPrologoEpilogo();
     probarTraduccionConEtiquetas();
     probarRechazoProgramasInvalidos();
     std::cout << "Todas las pruebas del traductor pasaron con exito.\n";

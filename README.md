@@ -44,9 +44,11 @@ El núcleo del traductor se encuentra desacoplado como la biblioteca estática `
 - **Modelo de datos semántico:** Soporte de operandos tipados (registros, inmediatos numéricos de 64 bits, etiquetas y memoria local estructurada con base y desplazamiento).
 - **Instrucciones soportadas:**
   - Movimiento de datos: `mov reg, reg`, `mov reg, imm`, carga desde stack `mov reg, [rbp - imm]` (`ldr`) y almacenamiento en stack `mov [rbp - imm], reg` (`str`)
+  - Gestión de pila: `push reg`, `pop reg`
   - Aritmética básica: `add reg, reg`, `add reg, imm`, `sub reg, reg`, `sub reg, imm`
   - Operaciones lógicas: `and reg, reg`, `and reg, imm`, `or reg, reg`, `or reg, imm`, `xor reg, reg`, `xor reg, imm`
   - Comparación y control de flujo: `cmp reg, reg`, `cmp reg, imm`, `jmp etiqueta`, saltos condicionales con signo (`je`, `jne`, `jl`, `jle`, `jg`, `jge`), retorno `ret` y definiciones de etiquetas (`etiqueta:`)
+- **Gestión de pila, prólogo y epílogo:** Traducción de `push reg` y `pop reg` mediante `str` con pre-indexado (`[sp, #-16]!`) y `ldr` con post-indexado (`[sp], #16`), garantizando la estricta alineación a 16 bytes de la ABI AAPCS64 y permitiendo secuencias canónicas de marco de pila (`push rbp; mov rbp, rsp` y `mov rsp, rbp; pop rbp; ret`).
 - **Memoria local controlada:** Mapeo de accesos a pila con base `rbp` a `x29` en AArch64 mediante `ldr` y `str`, respetando el orden arquitectónico de operandos (registro primero en `str`) y validando contra direccionamientos complejos no permitidos.
 - **Traducción de 2 a 3 operandos:** Mapeo automático de la semántica destructiva de x86-64 (`add rax, 5`) a la forma explícita de tres operandos en AArch64 (`add x0, x0, #5`).
 - **Diagnósticos estructurados:** Detección de errores con número de línea, códigos tipificados (`E001`, `E014`, `E021`, `E022`, `E023`, `E040`) y mensajes descriptivos en español.

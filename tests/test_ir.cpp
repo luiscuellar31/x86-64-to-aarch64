@@ -105,9 +105,19 @@ void probarMemoriaIR() {
     InstruccionAArch64 instLdrCero(CodigoOperacionAArch64::Ldr, 12);
     instLdrCero.agregarOperando(OperandoAArch64::crearRegistro("x0"));
     instLdrCero.agregarOperando(OperandoAArch64::crearMemoria("x29", 0));
-    assert(instLdrCero.emitirTexto() == "ldr x0, [x29]");
+    // 7. Instruccion AArch64 str con pre-indexado: str x29, [sp, #-16]!
+    InstruccionAArch64 instPre(CodigoOperacionAArch64::Str, 13);
+    instPre.agregarOperando(OperandoAArch64::crearRegistro("x29"));
+    instPre.agregarOperando(OperandoAArch64::crearMemoria("sp", -16, ModoIndexadoAArch64::PreIndexado));
+    assert(instPre.emitirTexto() == "str x29, [sp, #-16]!");
 
-    std::cout << "  -> Exito en pruebas de memoria en IR.\n";
+    // 8. Instruccion AArch64 ldr con post-indexado: ldr x29, [sp], #16
+    InstruccionAArch64 instPost(CodigoOperacionAArch64::Ldr, 14);
+    instPost.agregarOperando(OperandoAArch64::crearRegistro("x29"));
+    instPost.agregarOperando(OperandoAArch64::crearMemoria("sp", 16, ModoIndexadoAArch64::PostIndexado));
+    assert(instPost.emitirTexto() == "ldr x29, [sp], #16");
+
+    std::cout << "  -> Exito en pruebas de memoria y modos de indexado en IR.\n";
 }
 
 int main() {

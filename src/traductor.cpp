@@ -87,7 +87,38 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
         return instAArch;
     }
 
-    // 4. Instrucciones de dos operandos (mov, add, sub, and, or, xor, cmp)
+    // 4. Instrucciones de pila / stack (push, pop)
+    if (instruccion.esInstruccion(CodigoOperacion::Push)) {
+        InstruccionAArch64 instAArch(CodigoOperacionAArch64::Str, instruccion.numeroLinea);
+        std::string regX86 = instruccion.operando(0).valor;
+        std::string regAArch = obtenerEquivalenteAArch64(regX86);
+
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regAArch));
+        instAArch.agregarOperando(OperandoAArch64::crearMemoria("sp", -16, ModoIndexadoAArch64::PreIndexado));
+
+        mapeoSalida.reglaId = "STACK_PUSH_REG";
+        mapeoSalida.explicacionCorta = "En AArch64 no existe instruccion 'push'; se traduce a 'str " + regAArch + ", [sp, #-16]!' con pre-indexado para preservar la alineacion de 16 bytes de AAPCS64.";
+        mapeoSalida.codigoOrigen = "push " + regX86;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
+    if (instruccion.esInstruccion(CodigoOperacion::Pop)) {
+        InstruccionAArch64 instAArch(CodigoOperacionAArch64::Ldr, instruccion.numeroLinea);
+        std::string regX86 = instruccion.operando(0).valor;
+        std::string regAArch = obtenerEquivalenteAArch64(regX86);
+
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regAArch));
+        instAArch.agregarOperando(OperandoAArch64::crearMemoria("sp", 16, ModoIndexadoAArch64::PostIndexado));
+
+        mapeoSalida.reglaId = "STACK_POP_REG";
+        mapeoSalida.explicacionCorta = "En AArch64 no existe instruccion 'pop'; se traduce a 'ldr " + regAArch + ", [sp], #16' con post-indexado restaurando el registro y el puntero de pila alineado.";
+        mapeoSalida.codigoOrigen = "pop " + regX86;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
+    // 5. Instrucciones de dos operandos (mov, add, sub, and, or, xor, cmp)
     const Operando& opDestino = instruccion.operando(0);
     const Operando& opFuente = instruccion.operando(1);
     std::string regDestinoX86 = opDestino.valor;

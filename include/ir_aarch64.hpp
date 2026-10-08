@@ -47,14 +47,24 @@ enum class TipoOperandoAArch64 {
 };
 
 /**
- * @brief Representa un operando de memoria en AArch64 (ej. [x29, #-8]).
+ * @brief Modos de indexado en instrucciones de memoria en AArch64.
+ */
+enum class ModoIndexadoAArch64 {
+    Offset,       // Directo con desplazamiento opcional: [base, #offset] o [base]
+    PreIndexado,  // Pre-indexado con actualizacion del base (writeback): [base, #offset]!
+    PostIndexado  // Post-indexado con actualizacion del base (writeback): [base], #offset
+};
+
+/**
+ * @brief Representa un operando de memoria en AArch64 (ej. [x29, #-8], [sp, #-16]!, [sp], #16).
  */
 struct OperandoMemoriaAArch64 {
     std::string registroBase;
     int64_t desplazamiento;
+    ModoIndexadoAArch64 modo;
 
     OperandoMemoriaAArch64();
-    OperandoMemoriaAArch64(const std::string& base, int64_t desp = 0);
+    OperandoMemoriaAArch64(const std::string& base, int64_t desp = 0, ModoIndexadoAArch64 modoIndex = ModoIndexadoAArch64::Offset);
     std::string emitirTexto() const;
 };
 
@@ -80,7 +90,7 @@ struct OperandoAArch64 {
     static OperandoAArch64 crearInmediato(int64_t valorNum);
     static OperandoAArch64 crearInmediato(const std::string& valorTexto, int64_t valorNum);
     static OperandoAArch64 crearEtiqueta(const std::string& nombreEtiqueta);
-    static OperandoAArch64 crearMemoria(const std::string& registroBase, int64_t desplazamiento = 0);
+    static OperandoAArch64 crearMemoria(const std::string& registroBase, int64_t desplazamiento = 0, ModoIndexadoAArch64 modo = ModoIndexadoAArch64::Offset);
     static OperandoAArch64 crearMemoria(const OperandoMemoriaAArch64& opMemoria);
 
     // Formatea el operando para su emision en ensamblador AArch64 (ej. anteponiendo '#' a inmediatos)

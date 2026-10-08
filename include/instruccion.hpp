@@ -26,6 +26,8 @@ enum class CodigoOperacion {
     Jle,
     Jg,
     Jge,
+    Push,
+    Pop,
     Ret
 };
 
@@ -125,6 +127,7 @@ struct Instruccion {
     bool esInstruccion(CodigoOperacion codigo) const;
     bool esSalto() const;
     bool esSaltoCondicional() const;
+    bool esStack() const;
     size_t cantidadOperandos() const;
     const Operando& operando(size_t indice) const;
 

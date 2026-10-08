@@ -135,12 +135,44 @@ void probarAnalisisOperandosMemoria() {
     std::cout << "  -> Exito en analisis de operandos de memoria.\n";
 }
 
+void probarAnalisisStack() {
+    std::cout << "[Test] Probando analisis de instrucciones de stack (push, pop)...\n";
+
+    // 1. push rbp
+    Instruccion instPush = AnalizadorSintactico::analizarTexto("push rbp", 1);
+    assert(instPush.codigoOperacion == CodigoOperacion::Push);
+    assert(instPush.esStack());
+    assert(instPush.operandos.size() == 1);
+    assert(instPush.operandos[0].esRegistro());
+    assert(instPush.operandos[0].valor == "rbp");
+
+    // 2. pop rbp
+    Instruccion instPop = AnalizadorSintactico::analizarTexto("pop rbp", 2);
+    assert(instPop.codigoOperacion == CodigoOperacion::Pop);
+    assert(instPop.esStack());
+    assert(instPop.operandos.size() == 1);
+    assert(instPop.operandos[0].esRegistro());
+    assert(instPop.operandos[0].valor == "rbp");
+
+    // 3. push rbx y pop rbx
+    Instruccion instPushRbx = AnalizadorSintactico::analizarTexto("push rbx", 3);
+    assert(instPushRbx.codigoOperacion == CodigoOperacion::Push);
+    assert(instPushRbx.operandos[0].valor == "rbx");
+
+    Instruccion instPopRbx = AnalizadorSintactico::analizarTexto("pop rbx", 4);
+    assert(instPopRbx.codigoOperacion == CodigoOperacion::Pop);
+    assert(instPopRbx.operandos[0].valor == "rbx");
+
+    std::cout << "  -> Exito en analisis de push y pop.\n";
+}
+
 int main() {
     std::cout << "=== Pruebas unitarias de AnalizadorSintactico ===\n";
     probarAnalisisInstruccionesBasicas();
     probarAnalisisEtiquetas();
     probarAnalisisProgramaCompleto();
     probarAnalisisOperandosMemoria();
+    probarAnalisisStack();
     std::cout << "Todas las pruebas del analizador sintactico pasaron con exito.\n";
     return 0;
 }
