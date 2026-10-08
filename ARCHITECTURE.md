@@ -41,7 +41,8 @@ Para mantener el código simple, uniforme y fácil de seguir:
 - **Legibilidad ante todo:** Priorizamos código claro, directo y modular. Si una función requiere varias líneas explícitas en lugar de una expresión condensada o un truco sintáctico difícil de leer, preferimos las líneas explícitas.
 - **Idioma:** Todo el código interno, variables, comentarios y nombres de archivos se escriben en español, manteniendo términos técnicos universales (`opcode`, `register`, `immediate`, `stack`).
 - **Nomenclatura:**
-  - Archivos: `snake_case` (ej. `analizador_lexico.cpp`).
+  - Archivos de código: `snake_case` (ej. `analizador_lexico.cpp`, `instruccion.hpp`).
+  - Documentos (`.md`): Mayúsculas / `SCREAMING_SNAKE_CASE` (ej. `README.md`, `ARCHITECTURE.md`, `SINTAXIS_ENTRADA.md`).
   - Variables y funciones: `camelCase` (ej. `registroDestino`, `analizarLinea`).
   - Clases, estructuras y enums: `PascalCase` (ej. `Instruccion`, `TipoOperando`).
   - Constantes: `SCREAMING_SNAKE_CASE` (ej. `MAX_OPERANDOS`).
