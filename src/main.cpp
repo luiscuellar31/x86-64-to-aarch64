@@ -1,85 +1,24 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "instruccion.hpp"
-#include "normalizador.hpp"
-#include "analizador_lexico.hpp"
-#include "analizador_sintactico.hpp"
-#include "ir_aarch64.hpp"
-#include "diagnostico.hpp"
-#include "resultado_traduccion.hpp"
+#include "traductor.hpp"
 
 static void ejecutarDemostracion() {
     std::cout << "=== Demostracion del Traductor x86-64 a AArch64 ===\n\n";
 
-    // 1. Demostracion del modelo de datos de instruccion (Fase 0)
-    std::cout << "[1] Modelo de datos interno (Fase 0):\n";
-    Instruccion instruccionEjemplo(CodigoOperacion::Add, 1);
-    instruccionEjemplo.agregarOperando(Operando::crearRegistro("rax"));
-    instruccionEjemplo.agregarOperando(Operando::crearInmediato("5"));
-    instruccionEjemplo.imprimir();
-
-    // 2. Demostracion del normalizador de texto (Fase 2, Subfase 1)
-    std::cout << "\n[2] Normalizacion de linea (Fase 2, Subfase 1):\n";
-    std::string lineaEntrada = "    ADD RAX, 5       ; incremento";
-    std::string lineaNormalizada = Normalizador::normalizarLinea(lineaEntrada);
-    std::cout << "  Entrada cruda:     \"" << lineaEntrada << "\"\n";
-    std::cout << "  Salida normalizada: \"" << lineaNormalizada << "\"\n";
-
-    // 3. Demostracion del analizador sintactico lineal (Fase 2, Subfases 2 y 3)
-    std::cout << "\n[3] Analisis sintactico y lexico (Fase 2, Subfases 2 y 3):\n";
-    std::string programaPrueba =
+    std::string programaEjemplo =
+        "; Programa x86-64 de prueba\n"
         "inicio:\n"
-        "    mov rax, 42\n"
-        "    add rax, 5\n"
-        "    ret\n";
-    std::cout << "  Programa de prueba:\n" << programaPrueba << "\n";
-    std::vector<Instruccion> instrucciones = AnalizadorSintactico::analizarPrograma(programaPrueba);
-    std::cout << "  Instrucciones reconocidas:\n";
-    for (const auto& inst : instrucciones) {
-        inst.imprimir();
-    }
+        "    mov rax, 42       ; valor inicial\n"
+        "    mov rbx, 10\n"
+        "    add rax, rbx      ; suma de registros\n"
+        "    sub rax, 2        ; resta inmediata\n"
+        "    ret               ; retornar resultado\n";
 
-    // 4. Demostracion de la Representacion Intermedia (IR) AArch64 (Fase 2, Subfase 4)
-    std::cout << "\n[4] Representacion Intermedia AArch64 (Fase 2, Subfase 4):\n";
-    InstruccionAArch64 irAdd(CodigoOperacionAArch64::Add, 3);
-    irAdd.agregarOperando(OperandoAArch64::crearRegistro("x0"));
-    irAdd.agregarOperando(OperandoAArch64::crearRegistro("x0"));
-    irAdd.agregarOperando(OperandoAArch64::crearInmediato(5));
-    irAdd.reglaId = "ARITH_ADD_IMM";
-    irAdd.explicacion = "x86 usa destino destructivo de 2 operandos; AArch64 requiere 3 operandos explicitos";
+    std::cout << "[Programa x86-64 de Entrada]:\n" << programaEjemplo << "\n";
 
-    std::cout << "  Instruccion IR destino:   " << irAdd.emitirTexto() << "\n";
-    std::cout << "  Regla aplicada:           " << irAdd.reglaId << "\n";
-    std::cout << "  Explicacion didactica:    " << irAdd.explicacion << "\n";
-
-    // 5. Demostracion de Diagnosticos Estructurados (Fase 2, Subfase 5)
-    std::cout << "\n[5] Diagnosticos Estructurados (Fase 2, Subfase 5):\n";
-    GestorDiagnosticos gestor;
-    gestor.agregarError(CodigosDiagnostico::kInstruccionDesconocida, 4, "instruccion 'vmovaps' no soportada", 5);
-    gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, 7, "registro 'eax' no soportado en modo solo 64 bits", 9);
-    gestor.agregarAdvertencia("W001", 1, "directiva de ensamblador ignorada");
-
-    std::cout << "  Total diagnósticos: " << gestor.cantidadTotal() << " (Errores: "
-              << gestor.cantidadErrores() << ", Advertencias: " << gestor.cantidadAdvertencias() << ")\n";
-    gestor.imprimir();
-
-    // 6. Demostracion de Resultado Estructurado de Traduccion (Fase 2, Subfase 6)
-    std::cout << "\n[6] Resultado Estructurado de Traduccion (Fase 2, Subfase 6):\n";
-    ResultadoTraduccion resultadoEjemplo;
-    resultadoEjemplo.codigoGenerado = "inicio:\n    mov x0, #42\n    add x0, x0, #5\n    ret\n";
-
-    MapeoTraduccion m1(2, "MOV_REG_IMM", "Carga inmediata en registro x0");
-    m1.codigoOrigen = "mov rax, 42";
-    m1.codigoDestino = "mov x0, #42";
-    resultadoEjemplo.agregarMapeo(m1);
-
-    MapeoTraduccion m2(3, "ARITH_ADD_IMM", "Suma con 3 operandos explicitos");
-    m2.codigoOrigen = "add rax, 5";
-    m2.codigoDestino = "add x0, x0, #5";
-    resultadoEjemplo.agregarMapeo(m2);
-
-    std::cout << resultadoEjemplo.resumenFormateado();
+    ResultadoTraduccion resultado = Traductor::traducir(programaEjemplo);
+    std::cout << resultado.resumenFormateado();
 
     std::cout << "\nUso como CLI: ./x86_64_to_aarch64 <archivo.s>\n";
 }
@@ -95,16 +34,12 @@ static int procesarArchivoEntrada(const std::string& rutaArchivo) {
     buffer << archivo.rdbuf();
     std::string contenido = buffer.str();
 
-    std::cout << "Analizando archivo: " << rutaArchivo << " ...\n\n";
+    std::cout << "Traduciendo archivo: " << rutaArchivo << " ...\n\n";
 
-    std::vector<Instruccion> instrucciones = AnalizadorSintactico::analizarPrograma(contenido);
-    std::cout << "Instrucciones identificadas (" << instrucciones.size() << "):\n";
-    for (const auto& inst : instrucciones) {
-        inst.imprimir();
-    }
+    ResultadoTraduccion resultado = Traductor::traducir(contenido);
+    std::cout << resultado.resumenFormateado();
 
-    std::cout << "\nAnalisis completado con exito.\n";
-    return 0;
+    return resultado.esExitoso() ? 0 : 1;
 }
 
 int main(int argc, char* argv[]) {
@@ -114,7 +49,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Uso: x86_64_to_aarch64 [opciones] [archivo.s]\n\n"
                       << "Opciones:\n"
                       << "  -h, --help    Muestra esta ayuda\n"
-                      << "  Sin opciones  Ejecuta la demostracion interna del núcleo\n";
+                      << "  Sin opciones  Ejecuta la demostracion interna del traductor\n";
             return 0;
         }
         return procesarArchivoEntrada(argumento);

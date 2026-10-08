@@ -28,6 +28,7 @@ add_library(traductor_nucleo STATIC
     src/diagnostico.cpp
     src/resultado_traduccion.cpp
     src/validador.cpp
+    src/traductor.cpp
 )
 
 target_include_directories(traductor_nucleo PUBLIC
@@ -77,3 +78,7 @@ add_test(NAME TestResultadoTraduccion COMMAND test_resultado_traduccion)
 add_executable(test_validador tests/test_validador.cpp)
 target_link_libraries(test_validador PRIVATE traductor_nucleo)
 add_test(NAME TestValidador COMMAND test_validador)
+
+add_executable(test_traductor tests/test_traductor.cpp)
+target_link_libraries(test_traductor PRIVATE traductor_nucleo)
+add_test(NAME TestTraductor COMMAND test_traductor)

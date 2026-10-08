@@ -101,7 +101,7 @@ void probarInstruccionDesconocida() {
 }
 
 int main() {
-    std::cout << "=== Pruebas Gate del Validador Semantico (Milestone 3.0) ===\n";
+    std::cout << "=== Pruebas Gate del Validador Semantico ===\n";
     probarCasosValidos();
     probarRegistrosDesconocidos();
     probarOperandosInvertidos();
