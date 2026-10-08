@@ -3,13 +3,15 @@
 
 #include "instruccion.hpp"
 #include "normalizador.hpp"
+#include "analizador_lexico.hpp"
 #include <string>
 #include <vector>
 
 /**
- * @brief Analizador sintáctico lineal mínimo para ensamblador x86-64.
+ * @brief Analizador sintáctico lineal para ensamblador x86-64.
  *
  * Responsabilidades:
+ * - Consumir tokens provenientes del AnalizadorLexico.
  * - Identificar mnemónicos (mov, add, sub, ret).
  * - Identificar operandos (registros, inmediatos, etiquetas).
  * - Procesar etiquetas en su propia línea o precediendo instrucciones.
@@ -17,6 +19,13 @@
  */
 class AnalizadorSintactico {
 public:
+    /**
+     * @brief Analiza una secuencia de tokens y genera una Instruccion.
+     * @param tokens Secuencia de tokens correspondiente a una linea o sentencia.
+     * @return Estructura Instruccion construida.
+     */
+    static Instruccion analizarTokens(const std::vector<Token>& tokens);
+
     /**
      * @brief Analiza una linea ya normalizada y construye su representacion Instruccion.
      * @param linea Linea previamente procesada por el Normalizador.

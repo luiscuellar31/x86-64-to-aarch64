@@ -1,153 +1,97 @@
 #include "analizador_sintactico.hpp"
-#include "tabla_registros.hpp"
-#include <sstream>
 #include <cctype>
 
-static std::string recortar(const std::string& texto) {
-    if (texto.empty()) {
-        return "";
-    }
-    size_t inicio = 0;
-    while (inicio < texto.size() && (std::isspace(static_cast<unsigned char>(texto[inicio])) != 0)) {
-        inicio++;
-    }
-    if (inicio >= texto.size()) {
-        return "";
-    }
-    size_t fin = texto.size() - 1;
-    while (fin > inicio && (std::isspace(static_cast<unsigned char>(texto[fin])) != 0)) {
-        fin--;
-    }
-    return texto.substr(inicio, fin - inicio + 1);
-}
-
-static bool esIdentificadorValido(const std::string& texto) {
-    if (texto.empty()) {
-        return false;
-    }
-    char primerCaracter = texto[0];
-    if (primerCaracter != '_' && (std::isalpha(static_cast<unsigned char>(primerCaracter)) == 0)) {
-        return false;
-    }
-    for (char caracter : texto) {
-        if (caracter != '_' && (std::isalnum(static_cast<unsigned char>(caracter)) == 0)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool esInmediato(const std::string& texto) {
-    if (texto.empty()) {
-        return false;
-    }
-    size_t indice = 0;
-    if (texto[0] == '+' || texto[0] == '-') {
-        indice++;
-        if (indice >= texto.size()) {
-            return false;
-        }
-    }
-    if (texto.substr(indice, 2) == "0x" || texto.substr(indice, 2) == "0X") {
-        indice += 2;
-        if (indice >= texto.size()) {
-            return false;
-        }
-        for (size_t i = indice; i < texto.size(); ++i) {
-            if (std::isxdigit(static_cast<unsigned char>(texto[i])) == 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-    for (size_t i = indice; i < texto.size(); ++i) {
-        if (std::isdigit(static_cast<unsigned char>(texto[i])) == 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
 Operando AnalizadorSintactico::clasificarOperando(const std::string& textoOperando) {
-    std::string limpio = recortar(textoOperando);
-    if (limpio.empty()) {
+    std::vector<Token> tokens = AnalizadorLexico::tokenizarLinea(textoOperando, 1);
+    if (tokens.empty()) {
         return Operando(TipoOperando::Desconocido, "");
     }
 
-    if (esRegistroX86(limpio)) {
-        return Operando::crearRegistro(normalizarNombreRegistro(limpio));
+    const Token& primerToken = tokens[0];
+    if (primerToken.es(TipoToken::Registro)) {
+        return Operando::crearRegistro(primerToken.texto);
     }
-
-    if (esInmediato(limpio)) {
-        return Operando::crearInmediato(limpio);
+    if (primerToken.es(TipoToken::Inmediato)) {
+        return Operando::crearInmediato(primerToken.texto);
     }
-
-    if (esIdentificadorValido(limpio)) {
-        return Operando::crearEtiqueta(limpio);
+    if (primerToken.es(TipoToken::Identificador)) {
+        return Operando::crearEtiqueta(primerToken.texto);
     }
-
-    return Operando(TipoOperando::Desconocido, limpio);
+    return Operando(TipoOperando::Desconocido, primerToken.texto);
 }
 
-Instruccion AnalizadorSintactico::analizarLinea(const LineaNormalizada& linea) {
-    std::string contenido = recortar(linea.contenido);
-    if (contenido.empty()) {
-        return Instruccion(CodigoOperacion::Desconocido, linea.numeroLineaOriginal);
+Instruccion AnalizadorSintactico::analizarTokens(const std::vector<Token>& tokens) {
+    if (tokens.empty()) {
+        return Instruccion(CodigoOperacion::Desconocido, 1);
     }
 
+    int numeroLinea = tokens[0].numeroLinea;
+    size_t indice = 0;
     std::string etiquetaDetectada = "";
-    std::string textoCuerpo = contenido;
 
-    // Detectamos si la linea inicia con definicion de etiqueta (delimitada por ':')
-    size_t posicionDosPuntos = contenido.find(':');
-    if (posicionDosPuntos != std::string::npos) {
-        etiquetaDetectada = recortar(contenido.substr(0, posicionDosPuntos));
-        textoCuerpo = recortar(contenido.substr(posicionDosPuntos + 1));
+    // 1. Detección de etiqueta al inicio (Identificador seguido de ':')
+    if (tokens.size() >= 2 && tokens[0].es(TipoToken::Identificador) && tokens[1].es(TipoToken::DosPuntos)) {
+        etiquetaDetectada = tokens[0].texto;
+        indice = 2; // Avanzamos tras el identificador y los dos puntos
 
-        // Caso 1: Es una etiqueta pura sin instruccion acompañante (ej. "inicio:")
-        if (textoCuerpo.empty()) {
-            Instruccion instruccionEtiqueta(CodigoOperacion::Etiqueta, linea.numeroLineaOriginal);
+        // Si la línea solo contenía la etiqueta
+        if (indice >= tokens.size() || tokens[indice].es(TipoToken::FinDeLinea)) {
+            Instruccion instruccionEtiqueta(CodigoOperacion::Etiqueta, numeroLinea);
             instruccionEtiqueta.etiqueta = etiquetaDetectada;
             return instruccionEtiqueta;
         }
     }
 
-    // Caso 2: Procesamos el cuerpo de la instruccion (mnemonico y operandos)
-    size_t posicionPrimerEspacio = 0;
-    while (posicionPrimerEspacio < textoCuerpo.size() &&
-           (std::isspace(static_cast<unsigned char>(textoCuerpo[posicionPrimerEspacio])) == 0)) {
-        posicionPrimerEspacio++;
+    // 2. Extraer el mnemónico
+    if (indice >= tokens.size() || tokens[indice].es(TipoToken::FinDeLinea)) {
+        Instruccion instVacia(CodigoOperacion::Desconocido, numeroLinea);
+        instVacia.etiqueta = etiquetaDetectada;
+        return instVacia;
     }
 
-    std::string textoMnemonico = textoCuerpo.substr(0, posicionPrimerEspacio);
-    CodigoOperacion codigo = textoACodigoOperacion(textoMnemonico);
+    std::string mnemonicoTexto = tokens[indice].texto;
+    std::string mnemonicoNormalizado = "";
+    for (char c : mnemonicoTexto) {
+        mnemonicoNormalizado += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    CodigoOperacion codigo = textoACodigoOperacion(mnemonicoNormalizado);
 
-    Instruccion instruccion(codigo, linea.numeroLineaOriginal);
+    Instruccion instruccion(codigo, numeroLinea);
     if (!etiquetaDetectada.empty()) {
         instruccion.etiqueta = etiquetaDetectada;
     }
+    indice++;
 
-    // Si no hay operandos (ej. "ret")
-    if (posicionPrimerEspacio >= textoCuerpo.size()) {
-        return instruccion;
-    }
-
-    std::string textoOperandos = recortar(textoCuerpo.substr(posicionPrimerEspacio));
-    if (textoOperandos.empty()) {
-        return instruccion;
-    }
-
-    // Dividimos operandos separados por coma
-    std::stringstream flujo(textoOperandos);
-    std::string item;
-    while (std::getline(flujo, item, ',')) {
-        std::string operandoLimpio = recortar(item);
-        if (!operandoLimpio.empty()) {
-            instruccion.agregarOperando(clasificarOperando(operandoLimpio));
+    // 3. Procesar los operandos restantes separados por coma
+    while (indice < tokens.size()) {
+        const Token& tokenActual = tokens[indice];
+        if (tokenActual.es(TipoToken::FinDeLinea)) {
+            break;
         }
+
+        if (tokenActual.es(TipoToken::Coma)) {
+            indice++;
+            continue;
+        }
+
+        if (tokenActual.es(TipoToken::Registro)) {
+            instruccion.agregarOperando(Operando::crearRegistro(tokenActual.texto));
+        } else if (tokenActual.es(TipoToken::Inmediato)) {
+            instruccion.agregarOperando(Operando::crearInmediato(tokenActual.texto));
+        } else if (tokenActual.es(TipoToken::Identificador)) {
+            instruccion.agregarOperando(Operando::crearEtiqueta(tokenActual.texto));
+        } else {
+            instruccion.agregarOperando(Operando(TipoOperando::Desconocido, tokenActual.texto));
+        }
+        indice++;
     }
 
     return instruccion;
+}
+
+Instruccion AnalizadorSintactico::analizarLinea(const LineaNormalizada& linea) {
+    std::vector<Token> tokens = AnalizadorLexico::tokenizarLinea(linea.contenido, linea.numeroLineaOriginal);
+    return analizarTokens(tokens);
 }
 
 Instruccion AnalizadorSintactico::analizarTexto(const std::string& textoLinea, int numeroLinea) {

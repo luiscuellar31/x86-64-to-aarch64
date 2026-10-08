@@ -21,6 +21,7 @@ add_executable(x86_64_to_aarch64
     src/instruccion.cpp
     src/normalizador.cpp
     src/tabla_registros.cpp
+    src/analizador_lexico.cpp
     src/analizador_sintactico.cpp
 )
 
@@ -43,9 +44,22 @@ target_include_directories(test_normalizador PRIVATE
 
 add_test(NAME TestNormalizador COMMAND test_normalizador)
 
+add_executable(test_analizador_lexico
+    tests/test_analizador_lexico.cpp
+    src/analizador_lexico.cpp
+    src/tabla_registros.cpp
+)
+
+target_include_directories(test_analizador_lexico PRIVATE
+    include
+)
+
+add_test(NAME TestAnalizadorLexico COMMAND test_analizador_lexico)
+
 add_executable(test_analizador_sintactico
     tests/test_analizador_sintactico.cpp
     src/analizador_sintactico.cpp
+    src/analizador_lexico.cpp
     src/normalizador.cpp
     src/tabla_registros.cpp
     src/instruccion.cpp
