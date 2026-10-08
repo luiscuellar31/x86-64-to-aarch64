@@ -1,5 +1,6 @@
 #include "validador.hpp"
 #include "tabla_registros.hpp"
+#include <unordered_set>
 
 bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnosticos& gestor) {
     int linea = instruccion.numeroLinea;
@@ -31,13 +32,40 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
         return true;
     }
 
-    // 4. Validar instrucciones de dos operandos (mov, add, sub, and, or, xor)
+    // 4. Validar instrucciones de salto (jmp, je, jne, jl, jle, jg, jge)
+    if (instruccion.esSalto()) {
+        std::string nombreMnemonic = codigoOperacionATexto(instruccion.codigoOperacion);
+
+        if (instruccion.cantidadOperandos() < 1) {
+            gestor.agregarError(CodigosDiagnostico::kFaltanOperandos, linea,
+                                "la instruccion '" + nombreMnemonic + "' requiere 1 operando (etiqueta destino)");
+            return false;
+        }
+
+        if (instruccion.cantidadOperandos() > 1) {
+            gestor.agregarError(CodigosDiagnostico::kExcesoOperandos, linea,
+                                "la instruccion '" + nombreMnemonic + "' solo admite 1 operando (etiqueta destino)");
+            return false;
+        }
+
+        const Operando& opDestino = instruccion.operando(0);
+        if (!opDestino.esEtiqueta()) {
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "el operando de '" + nombreMnemonic + "' debe ser una etiqueta valida");
+            return false;
+        }
+
+        return true;
+    }
+
+    // 5. Validar instrucciones de dos operandos (mov, add, sub, and, or, xor, cmp)
     if (instruccion.esInstruccion(CodigoOperacion::Mov) ||
         instruccion.esInstruccion(CodigoOperacion::Add) ||
         instruccion.esInstruccion(CodigoOperacion::Sub) ||
         instruccion.esInstruccion(CodigoOperacion::And) ||
         instruccion.esInstruccion(CodigoOperacion::Or) ||
-        instruccion.esInstruccion(CodigoOperacion::Xor)) {
+        instruccion.esInstruccion(CodigoOperacion::Xor) ||
+        instruccion.esInstruccion(CodigoOperacion::Cmp)) {
 
         std::string nombreMnemonic = codigoOperacionATexto(instruccion.codigoOperacion);
 
@@ -121,10 +149,28 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
 
 bool Validador::validarPrograma(const std::vector<Instruccion>& instrucciones, GestorDiagnosticos& gestor) {
     bool todoValido = true;
+
+    // 1. Recolectar todas las etiquetas definidas en el programa
+    std::unordered_set<std::string> etiquetasDefinidas;
+    for (const auto& instruccion : instrucciones) {
+        if (instruccion.tieneEtiqueta()) {
+            etiquetasDefinidas.insert(instruccion.etiqueta);
+        }
+    }
+
+    // 2. Validar cada instrucción y la existencia de los destinos de salto
     for (const auto& instruccion : instrucciones) {
         if (!validarInstruccion(instruccion, gestor)) {
             todoValido = false;
+        } else if (instruccion.esSalto() && instruccion.cantidadOperandos() == 1) {
+            const Operando& opDestino = instruccion.operando(0);
+            if (opDestino.esEtiqueta() && etiquetasDefinidas.find(opDestino.valor) == etiquetasDefinidas.end()) {
+                gestor.agregarError(CodigosDiagnostico::kEtiquetaNoDefinida, instruccion.numeroLinea,
+                                    "etiqueta de salto '" + opDestino.valor + "' no definida en el programa");
+                todoValido = false;
+            }
         }
     }
+
     return todoValido;
 }

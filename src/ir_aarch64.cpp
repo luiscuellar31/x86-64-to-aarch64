@@ -16,6 +16,22 @@ std::string codigoOperacionAArch64ATexto(CodigoOperacionAArch64 codigo) {
             return "orr";
         case CodigoOperacionAArch64::Eor:
             return "eor";
+        case CodigoOperacionAArch64::Cmp:
+            return "cmp";
+        case CodigoOperacionAArch64::B:
+            return "b";
+        case CodigoOperacionAArch64::BEq:
+            return "b.eq";
+        case CodigoOperacionAArch64::BNe:
+            return "b.ne";
+        case CodigoOperacionAArch64::BLt:
+            return "b.lt";
+        case CodigoOperacionAArch64::BLe:
+            return "b.le";
+        case CodigoOperacionAArch64::BGt:
+            return "b.gt";
+        case CodigoOperacionAArch64::BGe:
+            return "b.ge";
         case CodigoOperacionAArch64::Ret:
             return "ret";
         case CodigoOperacionAArch64::Desconocido:

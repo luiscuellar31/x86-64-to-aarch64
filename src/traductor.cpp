@@ -30,7 +30,64 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
         return instAArch;
     }
 
-    // 3. Instrucciones de dos operandos (mov, add, sub)
+    // 3. Instrucciones de salto (jmp, je, jne, jl, jle, jg, jge)
+    if (instruccion.esSalto()) {
+        std::string etiquetaDestino = instruccion.operando(0).valor;
+        CodigoOperacionAArch64 opcAArch = CodigoOperacionAArch64::B;
+        std::string reglaId = "JUMP_UNCOND";
+        std::string explicacion = "Salto incondicional relativo; se traduce a 'b' (branch) en AArch64.";
+
+        switch (instruccion.codigoOperacion) {
+            case CodigoOperacion::Jmp:
+                opcAArch = CodigoOperacionAArch64::B;
+                reglaId = "JUMP_UNCOND";
+                explicacion = "Salto incondicional relativo; se traduce a 'b' (branch) en AArch64.";
+                break;
+            case CodigoOperacion::Je:
+                opcAArch = CodigoOperacionAArch64::BEq;
+                reglaId = "JUMP_COND_EQ";
+                explicacion = "Salto condicional por igualdad / cero (ZF=1); se traduce a 'b.eq' en AArch64.";
+                break;
+            case CodigoOperacion::Jne:
+                opcAArch = CodigoOperacionAArch64::BNe;
+                reglaId = "JUMP_COND_NE";
+                explicacion = "Salto condicional por no igualdad / no cero (ZF=0); se traduce a 'b.ne' en AArch64.";
+                break;
+            case CodigoOperacion::Jl:
+                opcAArch = CodigoOperacionAArch64::BLt;
+                reglaId = "JUMP_COND_LT";
+                explicacion = "Salto condicional si menor con signo (SF != OF); se traduce a 'b.lt' en AArch64.";
+                break;
+            case CodigoOperacion::Jle:
+                opcAArch = CodigoOperacionAArch64::BLe;
+                reglaId = "JUMP_COND_LE";
+                explicacion = "Salto condicional si menor o igual con signo (ZF=1 o SF != OF); se traduce a 'b.le' en AArch64.";
+                break;
+            case CodigoOperacion::Jg:
+                opcAArch = CodigoOperacionAArch64::BGt;
+                reglaId = "JUMP_COND_GT";
+                explicacion = "Salto condicional si mayor con signo (ZF=0 y SF == OF); se traduce a 'b.gt' en AArch64.";
+                break;
+            case CodigoOperacion::Jge:
+                opcAArch = CodigoOperacionAArch64::BGe;
+                reglaId = "JUMP_COND_GE";
+                explicacion = "Salto condicional si mayor o igual con signo (SF == OF); se traduce a 'b.ge' en AArch64.";
+                break;
+            default:
+                break;
+        }
+
+        InstruccionAArch64 instAArch(opcAArch, instruccion.numeroLinea);
+        instAArch.agregarOperando(OperandoAArch64::crearEtiqueta(etiquetaDestino));
+
+        mapeoSalida.reglaId = reglaId;
+        mapeoSalida.explicacionCorta = explicacion;
+        mapeoSalida.codigoOrigen = codigoOperacionATexto(instruccion.codigoOperacion) + " " + etiquetaDestino;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
+    // 4. Instrucciones de dos operandos (mov, add, sub, and, or, xor, cmp)
     std::string regDestinoX86 = instruccion.operando(0).valor;
     std::string regDestinoAArch = obtenerEquivalenteAArch64(regDestinoX86);
     const Operando& opFuente = instruccion.operando(1);
@@ -175,6 +232,29 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
         }
 
         mapeoSalida.codigoOrigen = "xor " + regDestinoX86 + ", " + opFuente.valor;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
+    // Caso G: cmp
+    if (instruccion.esInstruccion(CodigoOperacion::Cmp)) {
+        InstruccionAArch64 instAArch(CodigoOperacionAArch64::Cmp, instruccion.numeroLinea);
+        instAArch.agregarOperando(OperandoAArch64::crearRegistro(regDestinoAArch));
+
+        if (opFuente.esRegistro()) {
+            std::string regFuenteAArch = obtenerEquivalenteAArch64(opFuente.valor);
+            instAArch.agregarOperando(OperandoAArch64::crearRegistro(regFuenteAArch));
+
+            mapeoSalida.reglaId = "COND_CMP_REG";
+            mapeoSalida.explicacionCorta = "Comparacion entre registros de 64 bits; en AArch64 es un alias de 'subs xzr, xD, xS' que actualiza flags NZCV.";
+        } else {
+            instAArch.agregarOperando(OperandoAArch64::crearInmediato(opFuente.valor, opFuente.valorNumerico));
+
+            mapeoSalida.reglaId = "COND_CMP_IMM";
+            mapeoSalida.explicacionCorta = "Comparacion de registro con constante inmediata; en AArch64 actualiza flags NZCV descartando el resultado.";
+        }
+
+        mapeoSalida.codigoOrigen = "cmp " + regDestinoX86 + ", " + opFuente.valor;
         mapeoSalida.codigoDestino = instAArch.emitirTexto();
         return instAArch;
     }

@@ -18,6 +18,14 @@ enum class CodigoOperacion {
     And,
     Or,
     Xor,
+    Cmp,
+    Jmp,
+    Je,
+    Jne,
+    Jl,
+    Jle,
+    Jg,
+    Jge,
     Ret
 };
 
@@ -94,6 +102,8 @@ struct Instruccion {
     bool tieneEtiqueta() const;
     bool esEtiquetaPura() const;
     bool esInstruccion(CodigoOperacion codigo) const;
+    bool esSalto() const;
+    bool esSaltoCondicional() const;
     size_t cantidadOperandos() const;
     const Operando& operando(size_t indice) const;
 

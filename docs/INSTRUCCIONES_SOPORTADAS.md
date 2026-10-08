@@ -28,6 +28,15 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 | `or` | `reg, imm` | Soportado (M3.1) | Sí | `orr xD, xD, #imm` | Operación lógica OR inclusiva con inmediato (`orr` en AArch64). |
 | `xor` | `reg, reg` | Soportado (M3.1) | Sí | `eor xD, xD, xS` | Operación lógica XOR exclusiva; mnemónico `eor` en AArch64. |
 | `xor` | `reg, imm` | Soportado (M3.1) | Sí | `eor xD, xD, #imm` | Operación lógica XOR exclusiva con inmediato (`eor` en AArch64). |
+| `cmp` | `reg, reg` | Soportado (M3.2) | Sí | `cmp xD, xS` | Actualiza flags NZCV sin modificar registro destino (alias de `subs xzr, xD, xS`). |
+| `cmp` | `reg, imm` | Soportado (M3.2) | Sí | `cmp xD, #imm` | Comparación de registro con inmediato de 64 bits. |
+| `jmp` | `etiqueta` | Soportado (M3.2) | No | `b etiqueta` | Salto incondicional relativo (`b` en AArch64). |
+| `je` | `etiqueta` | Soportado (M3.2) | No | `b.eq etiqueta` | Salto condicional si igual / cero (condición `ZF = 1`). |
+| `jne` | `etiqueta` | Soportado (M3.2) | No | `b.ne etiqueta` | Salto condicional si no igual / no cero (condición `ZF = 0`). |
+| `jl` | `etiqueta` | Soportado (M3.2) | No | `b.lt etiqueta` | Salto condicional si menor con signo (condición `SF != OF`). |
+| `jle` | `etiqueta` | Soportado (M3.2) | No | `b.le etiqueta` | Salto condicional si menor o igual con signo (`ZF = 1` o `SF != OF`). |
+| `jg` | `etiqueta` | Soportado (M3.2) | No | `b.gt etiqueta` | Salto condicional si mayor con signo (`ZF = 0` y `SF == OF`). |
+| `jge` | `etiqueta` | Soportado (M3.2) | No | `b.ge etiqueta` | Salto condicional si mayor o igual con signo (`SF == OF`). |
 | `ret` | *(sin operandos)* | Soportado (V0) | No | `ret` | Retorno de subrutina (en AArch64 salta a la dirección en `x30`/`lr`). |
 
 ---
@@ -36,8 +45,6 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 
 | Instrucción x86-64 | Forma | Estado | Afecta Flags x86 | Equivalente AArch64 | Notas |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `cmp` | `reg, reg / imm` | Planificado (M3.2) | Sí | `cmp xD, xS/#imm` | Actualiza flags NZCV sin modificar registro destino. |
-| `jmp` | `etiqueta` | Planificado (M3.2) | No | `b etiqueta` | Salto incondicional relativo (`b` en AArch64). |
-| `je` / `jne` | `etiqueta` | Planificado (M3.2) | No | `b.eq` / `b.ne etiqueta` | Saltos condicionales basados en condición cero/igualdad. |
-| `jl` / `jle` | `etiqueta` | Planificado (M3.2) | No | `b.lt` / `b.le etiqueta` | Saltos condicionales con signo (menor / menor o igual). |
-| `jg` / `jge` | `etiqueta` | Planificado (M3.2) | No | `b.gt` / `b.ge etiqueta` | Saltos condicionales con signo (mayor / mayor o igual). |
+| `mov` | `reg, [rbp - imm]` | Planificado (M3.3) | No | `ldr xD, [x29, #-imm]` | Carga desde marco de pila local. |
+| `mov` | `[rbp - imm], reg` | Planificado (M3.3) | No | `str xS, [x29, #-imm]` | Almacenamiento en marco de pila local. |
+| `call` | `etiqueta` | Planificado (M3.4) | Sí/No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30`. |

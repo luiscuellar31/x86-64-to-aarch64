@@ -29,15 +29,36 @@ Este documento define la estrategia para manejar las diferencias entre el regist
 
 ---
 
-## 3. Política para Saltos y Comparaciones (V1)
+## 3. Política para Saltos y Comparaciones (Milestone 3.2)
 
-Cuando se implemente control de flujo condicional:
-1. La instrucción de comparación `cmp reg, op` en x86-64 se mapea a la instrucción `cmp xD, xS/#imm` en AArch64.
-2. En AArch64, `cmp` es un alias arquitectónico de `subs xzr, xD, op` que actualiza los flags `NZCV` descartando el resultado numérico.
-3. Las instrucciones de salto condicional se traducen inmediatamente a su equivalente directo:
-   - `je` (Zero Flag activo) ⟶ `b.eq`
-   - `jne` (Zero Flag inactivo) ⟶ `b.ne`
-   - `jl` (Less than, con signo) ⟶ `b.lt`
-   - `jle` (Less or equal, con signo) ⟶ `b.le`
-   - `jg` (Greater than, con signo) ⟶ `b.gt`
-   - `jge` (Greater or equal, con signo) ⟶ `b.ge`
+### 3.1. Semántica y efecto de `cmp`
+- **En x86-64:** `cmp op1, op2` ejecuta internamente la resta aritmética `op1 - op2`, descartando el resultado numérico y actualizando las banderas de estado del registro `RFLAGS`:
+  - `ZF` (*Zero Flag*): se activa si `op1 == op2` (resultado cero).
+  - `SF` (*Sign Flag*): refleja el bit más significativo (signo) del resultado.
+  - `OF` (*Overflow Flag*): se activa si hubo desbordamiento aritmético con signo.
+  - `CF` (*Carry Flag*): refleja acarreo o préstamo en aritmética sin signo.
+- **En AArch64:** La instrucción `cmp xD, xS/#imm` es un alias arquitectónico estándar de `subs xzr, xD, xS/#imm`. Realiza la resta, descarta el resultado escribiendo al registro nulo `xzr` y actualiza las cuatro banderas de condición de `PSTATE`:
+  - `N` (*Negative*): resultado negativo con signo.
+  - `Z` (*Zero*): resultado igual a cero.
+  - `C` (*Carry*): acarreo sin signo.
+  - `V` (*oVerflow*): desbordamiento con signo.
+
+### 3.2. Correspondencia de saltos condicionales con signo (*signed*)
+Las condiciones con signo se mapean de forma unívoca y determinista entre ambas arquitecturas:
+
+| Instrucción x86-64 | Condición x86-64 | Instrucción AArch64 | Condición `PSTATE` | Significado pedagógico |
+| :--- | :--- | :--- | :--- | :--- |
+| `je etiqueta` | `ZF == 1` | `b.eq etiqueta` | `Z == 1` | Salto si son iguales. |
+| `jne etiqueta` | `ZF == 0` | `b.ne etiqueta` | `Z == 0` | Salto si son diferentes. |
+| `jl etiqueta` | `SF != OF` | `b.lt etiqueta` | `N != V` | Salto si menor con signo. |
+| `jle etiqueta` | `ZF == 1` o `SF != OF` | `b.le etiqueta` | `Z == 1` o `N != V` | Salto si menor o igual con signo. |
+| `jg etiqueta` | `ZF == 0` y `SF == OF` | `b.gt etiqueta` | `Z == 0` y `N == V` | Salto si mayor con signo. |
+| `jge etiqueta` | `SF == OF` | `b.ge etiqueta` | `N == V` | Salto si mayor o igual con signo. |
+| `jmp etiqueta` | Incondicional | `b etiqueta` | Siempre | Bifurcación relativa incondicional. |
+
+### 3.3. Justificación académica: comparaciones con signo (*signed*) vs. sin signo (*unsigned*)
+- Las comparaciones sin signo en x86-64 (`ja`, `jb`, `jae`, `jbe`) dependen críticamente de la bandera `CF` (*Carry/Borrow*).
+- Existe una diferencia arquitectónica sutil pero fundamental:
+  - En x86-64, la resta activa `CF = 1` si hubo un préstamo (*borrow*).
+  - En AArch64, la resta define el flag `C` como *not borrow* (`C = 1` si NO hubo préstamo, `C = 0` si hubo préstamo).
+- Por este motivo, el subconjunto inicial soporta exclusivamente comparaciones enteras con signo (`signed`), donde la relación entre `N` (o `SF`) y `V` (o `OF`) es directamente isomórfica. Las instrucciones sin signo (`ja`, `jb`, etc.) se reservan para etapas posteriores cuando se incorpore la inversión del flag de acarreo en el modelo semántico.

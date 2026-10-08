@@ -17,6 +17,22 @@ std::string codigoOperacionATexto(CodigoOperacion codigo) {
             return "or";
         case CodigoOperacion::Xor:
             return "xor";
+        case CodigoOperacion::Cmp:
+            return "cmp";
+        case CodigoOperacion::Jmp:
+            return "jmp";
+        case CodigoOperacion::Je:
+            return "je";
+        case CodigoOperacion::Jne:
+            return "jne";
+        case CodigoOperacion::Jl:
+            return "jl";
+        case CodigoOperacion::Jle:
+            return "jle";
+        case CodigoOperacion::Jg:
+            return "jg";
+        case CodigoOperacion::Jge:
+            return "jge";
         case CodigoOperacion::Ret:
             return "ret";
         case CodigoOperacion::Desconocido:
@@ -43,6 +59,30 @@ CodigoOperacion textoACodigoOperacion(const std::string& texto) {
     }
     if (texto == "xor") {
         return CodigoOperacion::Xor;
+    }
+    if (texto == "cmp") {
+        return CodigoOperacion::Cmp;
+    }
+    if (texto == "jmp") {
+        return CodigoOperacion::Jmp;
+    }
+    if (texto == "je") {
+        return CodigoOperacion::Je;
+    }
+    if (texto == "jne") {
+        return CodigoOperacion::Jne;
+    }
+    if (texto == "jl") {
+        return CodigoOperacion::Jl;
+    }
+    if (texto == "jle") {
+        return CodigoOperacion::Jle;
+    }
+    if (texto == "jg") {
+        return CodigoOperacion::Jg;
+    }
+    if (texto == "jge") {
+        return CodigoOperacion::Jge;
     }
     if (texto == "ret") {
         return CodigoOperacion::Ret;
@@ -128,6 +168,19 @@ bool Instruccion::esEtiquetaPura() const {
 
 bool Instruccion::esInstruccion(CodigoOperacion codigo) const {
     return codigoOperacion == codigo;
+}
+
+bool Instruccion::esSalto() const {
+    return codigoOperacion == CodigoOperacion::Jmp || esSaltoCondicional();
+}
+
+bool Instruccion::esSaltoCondicional() const {
+    return codigoOperacion == CodigoOperacion::Je ||
+           codigoOperacion == CodigoOperacion::Jne ||
+           codigoOperacion == CodigoOperacion::Jl ||
+           codigoOperacion == CodigoOperacion::Jle ||
+           codigoOperacion == CodigoOperacion::Jg ||
+           codigoOperacion == CodigoOperacion::Jge;
 }
 
 size_t Instruccion::cantidadOperandos() const {

@@ -17,6 +17,14 @@ enum class CodigoOperacionAArch64 {
     And,      // Operacion logica AND (and)
     Orr,      // Operacion logica OR (orr)
     Eor,      // Operacion logica XOR (eor)
+    Cmp,      // Comparacion y actualizacion de flags NZCV (cmp)
+    B,        // Salto incondicional relativo (b)
+    BEq,      // Salto condicional si igual / zero (b.eq)
+    BNe,      // Salto condicional si no igual / not zero (b.ne)
+    BLt,      // Salto condicional si menor con signo (b.lt)
+    BLe,      // Salto condicional si menor o igual con signo (b.le)
+    BGt,      // Salto condicional si mayor con signo (b.gt)
+    BGe,      // Salto condicional si mayor o igual con signo (b.ge)
     Ret       // Retorno de funcion (ret)
 };
 

@@ -136,11 +136,63 @@ void probarTraduccionLogica() {
     std::cout << "  -> Exito en traduccion de operaciones logicas (and -> and, or -> orr, xor -> eor).\n";
 }
 
+void probarTraduccionComparacionYSaltos() {
+    std::cout << "[Test] Probando traduccion de comparacion (cmp) y control de flujo...\n";
+
+    std::string codigo =
+        "inicio:\n"
+        "    cmp rax, rbx\n"
+        "    je fin\n"
+        "    cmp rax, 10\n"
+        "    jne etiqueta1\n"
+        "etiqueta1:\n"
+        "    jl etiqueta2\n"
+        "etiqueta2:\n"
+        "    jle etiqueta3\n"
+        "etiqueta3:\n"
+        "    jg etiqueta4\n"
+        "etiqueta4:\n"
+        "    jge etiqueta5\n"
+        "etiqueta5:\n"
+        "    jmp fin\n"
+        "fin:\n"
+        "    ret\n";
+
+    ResultadoTraduccion res = Traductor::traducir(codigo);
+    assert(res.esExitoso());
+    assert(!res.tieneErrores());
+
+    // Verificamos instrucciones emitidas en AArch64
+    assert(res.codigoGenerado.find("cmp x0, x19") != std::string::npos);
+    assert(res.codigoGenerado.find("b.eq fin") != std::string::npos);
+    assert(res.codigoGenerado.find("cmp x0, #10") != std::string::npos);
+    assert(res.codigoGenerado.find("b.ne etiqueta1") != std::string::npos);
+    assert(res.codigoGenerado.find("b.lt etiqueta2") != std::string::npos);
+    assert(res.codigoGenerado.find("b.le etiqueta3") != std::string::npos);
+    assert(res.codigoGenerado.find("b.gt etiqueta4") != std::string::npos);
+    assert(res.codigoGenerado.find("b.ge etiqueta5") != std::string::npos);
+    assert(res.codigoGenerado.find("b fin") != std::string::npos);
+    assert(res.codigoGenerado.find("ret") != std::string::npos);
+
+    // Verificamos reglas didacticas
+    bool tieneCmpReg = false, tieneCmpImm = false, tieneB = false, tieneBEq = false;
+    for (const auto& mapeo : res.mapeos) {
+        if (mapeo.reglaId == "COND_CMP_REG") tieneCmpReg = true;
+        if (mapeo.reglaId == "COND_CMP_IMM") tieneCmpImm = true;
+        if (mapeo.reglaId == "JUMP_UNCOND") tieneB = true;
+        if (mapeo.reglaId == "JUMP_COND_EQ") tieneBEq = true;
+    }
+    assert(tieneCmpReg && tieneCmpImm && tieneB && tieneBEq);
+
+    std::cout << "  -> Exito en traduccion de cmp y saltos (jmp->b, je->b.eq, etc.).\n";
+}
+
 int main() {
     std::cout << "=== Pruebas de Traduccion de Extremo a Extremo ===\n";
     probarTraduccionMovimiento();
     probarTraduccionAritmetica();
     probarTraduccionLogica();
+    probarTraduccionComparacionYSaltos();
     probarTraduccionConEtiquetas();
     probarRechazoProgramasInvalidos();
     std::cout << "Todas las pruebas del traductor pasaron con exito.\n";

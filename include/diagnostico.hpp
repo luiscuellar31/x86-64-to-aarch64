@@ -30,6 +30,7 @@ namespace CodigosDiagnostico {
     inline const std::string kFaltanOperandos = "E023";
     inline const std::string kInmediatoInvalido = "E024";
     inline const std::string kSintaxisInvalida = "E030";
+    inline const std::string kEtiquetaNoDefinida = "E040";
 }
 
 /**
