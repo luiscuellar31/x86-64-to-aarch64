@@ -54,6 +54,7 @@ El núcleo del traductor se encuentra desacoplado como la biblioteca estática `
 - **Traducción de 2 a 3 operandos:** Mapeo automático de la semántica destructiva de x86-64 (`add rax, 5`) a la forma explícita de tres operandos en AArch64 (`add x0, x0, #5`).
 - **Diagnósticos estructurados:** Detección de errores con número de línea, códigos tipificados (`E001`, `E014`, `E021`, `E022`, `E023`, `E040`) y mensajes descriptivos en español.
 - **Mapeos didácticos:** Cada instrucción traducida vincula su línea de origen, regla aplicada y explicación técnica del mapeo arquitectónico.
+- **Interfaz de línea de comandos (CLI) estable:** Despachador completo con opciones `--help`, `--version`, `--explain`, `--dump-ir` y salida a archivo mediante `-o <archivo>` o redirección estándar.
 
 ---
 
@@ -80,7 +81,8 @@ x86-64-to-aarch64/
 │   ├── validador.hpp
 │   ├── traductor.hpp
 │   ├── diagnostico.hpp
-│   └── resultado_traduccion.hpp
+│   ├── resultado_traduccion.hpp
+│   └── opciones_cli.hpp
 ├── src/                    # Implementación del núcleo y ejecutable CLI
 │   ├── main.cpp            # Punto de entrada de la herramienta de línea de comandos
 │   └── ...                 # Módulos de implementación en C++17
@@ -114,12 +116,28 @@ ctest --test-dir build --output-on-failure
 ```
 
 ### Uso de la herramienta CLI
+
 ```bash
-# Ejecución en modo demostración interna
+# Ayuda y opciones disponibles
+./build/x86_64_to_aarch64 --help
+
+# Versión de la herramienta
+./build/x86_64_to_aarch64 --version
+
+# Demostración interactiva interna (sin argumentos)
 ./build/x86_64_to_aarch64
 
-# Traducción de un archivo de ensamblador x86-64
+# Traducción directa hacia la salida estándar
 ./build/x86_64_to_aarch64 examples/validos/01_mov_basico.s
+
+# Traducción con guardado en archivo de salida (-o)
+./build/x86_64_to_aarch64 examples/validos/01_mov_basico.s -o salida.s
+
+# Traducción con explicaciones pedagógicas detalladas (--explain)
+./build/x86_64_to_aarch64 examples/validos/08_llamadas_funciones.s --explain
+
+# Volcado de la representación intermedia AST e IR (--dump-ir)
+./build/x86_64_to_aarch64 examples/validos/08_llamadas_funciones.s --dump-ir
 ```
 
 ---

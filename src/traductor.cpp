@@ -347,6 +347,7 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
 
 ResultadoTraduccion Traductor::traducirInstrucciones(const std::vector<Instruccion>& instrucciones) {
     ResultadoTraduccion resultado;
+    resultado.irOrigen = instrucciones;
     GestorDiagnosticos gestor;
 
     // Paso 1: Validacion semantica de todo el programa
@@ -376,6 +377,11 @@ ResultadoTraduccion Traductor::traducirInstrucciones(const std::vector<Instrucci
 
         mapeo.lineasDestinoAArch64.push_back(lineaAArch64Actual);
         resultado.agregarMapeo(mapeo);
+
+        aarchInst.reglaId = mapeo.reglaId;
+        aarchInst.explicacion = mapeo.explicacionCorta;
+        resultado.irDestino.push_back(aarchInst);
+
         lineaAArch64Actual++;
     }
 

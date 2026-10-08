@@ -2,6 +2,8 @@
 #define RESULTADO_TRADUCCION_HPP
 
 #include "diagnostico.hpp"
+#include "instruccion.hpp"
+#include "ir_aarch64.hpp"
 #include <string>
 #include <vector>
 
@@ -27,12 +29,15 @@ struct MapeoTraduccion {
  * - El código ensamblador emitido en AArch64.
  * - Lista estructurada de diagnósticos (errores y advertencias).
  * - Mapeos entre líneas de origen y destino con justificaciones didácticas.
+ * - Representaciones intermedias de origen (AST x86-64) y destino (IR AArch64).
  */
 struct ResultadoTraduccion {
     bool exito;
     std::string codigoGenerado;
     std::vector<Diagnostico> diagnosticos;
     std::vector<MapeoTraduccion> mapeos;
+    std::vector<Instruccion> irOrigen;          // Representación intermedia AST de entrada
+    std::vector<InstruccionAArch64> irDestino;   // Representación intermedia IR de salida
 
     ResultadoTraduccion();
 
@@ -47,6 +52,12 @@ struct ResultadoTraduccion {
 
     // Genera un resumen textual del resultado incluyendo diagnósticos y mapeos explicativos
     std::string resumenFormateado() const;
+
+    // Genera un volcado textual estructurado de las representaciones intermedias (IR)
+    std::string volcadoIR() const;
+
+    // Genera un informe detallado con las explicaciones didácticas de las reglas aplicadas
+    std::string explicacionesFormateadas() const;
 };
 
 #endif // RESULTADO_TRADUCCION_HPP

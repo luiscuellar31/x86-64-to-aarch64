@@ -15,10 +15,11 @@ El proyecto es un traductor estático de código fuente a código fuente desarro
 El procesamiento de una instrucción sigue una secuencia lineal y desacoplada:
 
 1. **Normalización:** Limpia espacios en blanco, ignora comentarios y estandariza mayúsculas/minúsculas conservando los números de línea originales.
-2. **Análisis léxico y sintáctico:** Identifica mnemónicos, operandos (registros, inmediatos, etiquetas) y construye las estructuras en memoria (`Instruccion`, `Operando`).
-3. **Validación:** Verifica que la combinación y cantidad de operandos sean válidas dentro del subconjunto soportado.
-4. **Motor de traducción:** Aplica el mapeo de registros y la transformación semántica correspondiente de x86-64 hacia AArch64.
-5. **Emisión de código:** Genera las líneas finales en ensamblador AArch64 junto con diagnósticos o notas explicativas del cambio.
+2. **Análisis léxico y sintáctico:** Identifica mnemónicos, operandos (registros, inmediatos, etiquetas, memoria) y construye el AST lineal en memoria (`Instruccion`, `Operando`).
+3. **Validación semántica:** Verifica que la combinación y cantidad de operandos sean válidas dentro del subconjunto soportado y que las etiquetas referenciadas existan.
+4. **Motor de traducción:** Aplica el mapeo de registros y la transformación semántica correspondiente de x86-64 hacia la representación intermedia de destino (`InstruccionAArch64`).
+5. **Emisión de código y pedagogía:** Genera el ensamblador AArch64 final, vinculando mapeos didácticos deterministas y diagnósticos estructurados.
+6. **Despacho CLI y opciones:** El módulo `AnalizadorCLI` procesa los argumentos de ejecución (`--help`, `--version`, `--explain`, `--dump-ir`, `-o`), canalizando la salida a consola o archivos.
 
 ---
 

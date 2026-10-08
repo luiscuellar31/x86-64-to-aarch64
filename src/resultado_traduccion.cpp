@@ -78,3 +78,77 @@ std::string ResultadoTraduccion::resumenFormateado() const {
 
     return ss.str();
 }
+
+std::string ResultadoTraduccion::volcadoIR() const {
+    std::stringstream ss;
+    ss << "=== Volcado de Representacion Intermedia (IR) ===\n\n";
+
+    ss << "[IR x86-64 de Entrada (AST)]:\n";
+    if (irOrigen.empty()) {
+        ss << "  (sin instrucciones de entrada registradas)\n";
+    } else {
+        for (const auto& inst : irOrigen) {
+            ss << "  Linea " << inst.numeroLinea << ": ";
+            if (inst.esEtiquetaPura()) {
+                ss << "[ETIQUETA] " << inst.etiqueta << ":\n";
+            } else {
+                ss << "[" << codigoOperacionATexto(inst.codigoOperacion) << "]";
+                if (inst.tieneEtiqueta()) {
+                    ss << " (Etiqueta: " << inst.etiqueta << ")";
+                }
+                if (!inst.operandos.empty()) {
+                    ss << " Operandos: ";
+                    for (size_t i = 0; i < inst.operandos.size(); ++i) {
+                        if (i > 0) {
+                            ss << ", ";
+                        }
+                        ss << "[" << tipoOperandoATexto(inst.operandos[i].tipo) << ": " << inst.operandos[i].valor << "]";
+                    }
+                }
+                ss << "\n";
+            }
+        }
+    }
+
+    ss << "\n[IR AArch64 de Destino]:\n";
+    if (irDestino.empty()) {
+        ss << "  (sin instrucciones de destino emitidas)\n";
+    } else {
+        for (const auto& aarchInst : irDestino) {
+            ss << "  Linea " << aarchInst.lineaOrigen << ": ";
+            if (aarchInst.esEtiquetaPura()) {
+                ss << "[ETIQUETA] " << aarchInst.etiqueta << ":\n";
+            } else {
+                ss << "[" << codigoOperacionAArch64ATexto(aarchInst.codigoOperacion) << "] "
+                   << aarchInst.emitirTexto();
+                if (!aarchInst.reglaId.empty()) {
+                    ss << " (Regla: " << aarchInst.reglaId << ")";
+                }
+                ss << "\n";
+            }
+        }
+    }
+
+    return ss.str();
+}
+
+std::string ResultadoTraduccion::explicacionesFormateadas() const {
+    std::stringstream ss;
+    ss << "=== Explicaciones Didacticas de Traduccion ===\n";
+    if (mapeos.empty()) {
+        ss << "(No hay mapeos didacticos disponibles)\n";
+        return ss.str();
+    }
+
+    for (const auto& m : mapeos) {
+        ss << "Linea x86 " << m.lineaOrigenX86 << " -> Regla [" << m.reglaId << "]: "
+           << m.explicacionCorta << "\n";
+        if (!m.codigoOrigen.empty() && !m.codigoDestino.empty()) {
+            ss << "  x86-64:  \"" << m.codigoOrigen << "\"\n";
+            ss << "  AArch64: \"" << m.codigoDestino << "\"\n";
+        }
+    }
+
+    return ss.str();
+}
+
