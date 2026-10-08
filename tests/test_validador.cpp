@@ -287,6 +287,57 @@ void probarInstruccionesStack() {
     std::cout << "  -> Exito en validacion de push y pop.\n";
 }
 
+void probarValidacionLlamadas() {
+    std::cout << "[Test Gate] Probando validacion de instruccion call...\n";
+
+    // 1. Caso valido con definicion de subrutina
+    GestorDiagnosticos gestorValido;
+    std::vector<Instruccion> programa = {
+        AnalizadorSintactico::analizarTexto("inicio:", 1),
+        AnalizadorSintactico::analizarTexto("call duplicar", 2),
+        AnalizadorSintactico::analizarTexto("ret", 3),
+        AnalizadorSintactico::analizarTexto("duplicar:", 4),
+        AnalizadorSintactico::analizarTexto("ret", 5)
+    };
+    assert(Validador::validarPrograma(programa, gestorValido) == true);
+    assert(!gestorValido.tieneErrores());
+
+    // 2. Falta de operando (call sin destino)
+    GestorDiagnosticos gestorFalta;
+    Instruccion instCallVacia = AnalizadorSintactico::analizarTexto("call", 6);
+    assert(Validador::validarInstruccion(instCallVacia, gestorFalta) == false);
+    assert(gestorFalta.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
+
+    // 3. Exceso de operandos (call con mas de una etiqueta)
+    GestorDiagnosticos gestorExceso;
+    Instruccion instCallExceso = AnalizadorSintactico::analizarTexto("call f1, f2", 7);
+    assert(Validador::validarInstruccion(instCallExceso, gestorExceso) == false);
+    assert(gestorExceso.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
+
+    // 4. Operando de llamada no es etiqueta (inmediato o registro indirecto no soportado)
+    GestorDiagnosticos gestorImm;
+    Instruccion instCallImm = AnalizadorSintactico::analizarTexto("call 42", 8);
+    assert(Validador::validarInstruccion(instCallImm, gestorImm) == false);
+    assert(gestorImm.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    GestorDiagnosticos gestorReg;
+    Instruccion instCallReg = AnalizadorSintactico::analizarTexto("call rax", 9);
+    assert(Validador::validarInstruccion(instCallReg, gestorReg) == false);
+    assert(gestorReg.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+
+    // 5. Etiqueta de llamada no definida en el programa
+    GestorDiagnosticos gestorNoDef;
+    std::vector<Instruccion> progInexistente = {
+        AnalizadorSintactico::analizarTexto("inicio:", 1),
+        AnalizadorSintactico::analizarTexto("call subrutina_fantasma", 2),
+        AnalizadorSintactico::analizarTexto("ret", 3)
+    };
+    assert(Validador::validarPrograma(progInexistente, gestorNoDef) == false);
+    assert(gestorNoDef.obtenerTodos()[0].codigo == CodigosDiagnostico::kEtiquetaNoDefinida);
+
+    std::cout << "  -> Exito en validacion de call.\n";
+}
+
 int main() {
     std::cout << "=== Pruebas Gate del Validador Semantico ===\n";
     probarCasosValidos();
@@ -298,6 +349,7 @@ int main() {
     probarEtiquetasNoDefinidas();
     probarMemoriaLocal();
     probarInstruccionesStack();
+    probarValidacionLlamadas();
     std::cout << "Todas las condiciones Gate del validador pasaron con exito.\n";
     return 0;
 }

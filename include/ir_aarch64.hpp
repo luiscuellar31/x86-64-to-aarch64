@@ -27,6 +27,7 @@ enum class CodigoOperacionAArch64 {
     BGe,      // Salto condicional si mayor o igual con signo (b.ge)
     Ldr,      // Carga desde memoria a registro (ldr)
     Str,      // Almacenamiento desde registro a memoria (str)
+    Bl,       // Salto con enlace a subrutina (bl)
     Ret       // Retorno de funcion (ret)
 };
 

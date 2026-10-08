@@ -54,11 +54,20 @@ Donde `rbp` mapea al registro de marco (*frame pointer*) `x29` y `rsp` al punter
 
 ---
 
-## 3. Reglas Proyectadas para Llamadas de Subrutinas (Milestone 3.5 / V1+)
+## 3. Soporte de Llamadas de Subrutinas (Milestone 3.5)
 
-Cuando se introduzca soporte para llamadas de subrutinas (`call`):
+El traductor soporta llamadas directas a subrutina mediante `call etiqueta`, traduciéndolas a `bl etiqueta` en AArch64:
 
-1. **Link Register (`x30` / `lr`):** A diferencia de x86-64 (donde la instrucción `call` empuja automáticamente la dirección de retorno a la pila en memoria), AArch64 guarda la dirección de retorno en el registro `x30`. En funciones no hoja (que realizan llamadas a otras subrutinas), el prólogo deberá guardar `x29` y `x30` en el stack mediante `stp x29, x30, [sp, #-16]!`.
-2. **Clasificación de Registros:**
+1. **Mecanismo de retorno y Link Register (`x30` / `lr`):**
+   - En **x86-64**, la instrucción `call` decrementa `rsp` en 8 bytes y empuja automáticamente la dirección de retorno a la pila en memoria (`[rsp - 8]`).
+   - En **AArch64**, la instrucción `bl` (*Branch with Link*) escribe la dirección de la siguiente instrucción directamente en el registro de enlace `x30` (`lr`) sin alterar la pila (`sp`).
+2. **Diferenciación entre funciones hoja y no hoja:**
+   - **Funciones hoja (*leaf functions*):** No invocan otras subrutinas. La dirección de retorno permanece intacta en `x30` durante toda la ejecución de la función y `ret` ejecuta el salto de retorno (`br x30`) sin necesidad de tocar la pila para la dirección de retorno.
+   - **Funciones no hoja (*non-leaf functions*):** Si una subrutina invoca a otra mediante `call`/`bl`, la llamada anidada sobreescribirá el valor de `x30`. Por ende, la subrutina que actúa como llamante intermedia debe preservar `x30` (habitualmente junto con `x29` / frame pointer) en el marco de pila al inicio y restaurarlo antes de retornar.
+3. **Paso de parámetros y convención de retorno:**
+   - En **System V AMD64**, los primeros seis argumentos enteros se pasan en `rdi`, `rsi`, `rdx`, `rcx`, `r8`, `r9`, y el valor de retorno en `rax`.
+   - En **AAPCS64**, los argumentos se reciben en `x0` a `x7`, y el retorno en `x0`.
+   - El mapeo biyectivo del traductor (`rax` → `x0`, `rdi` → `x1`, `rsi` → `x2`, etc.) asegura una correspondencia directa y determinista en llamadas simples.
+4. **Clasificación de Registros:**
    - **Volátiles (*caller-saved* / preservados por el llamante):** `x0` a `x15`. Pueden ser modificados libremente por la función invocada.
    - **No volátiles (*callee-saved* / preservados por la función invocada):** `x19` a `x28`. Toda función que los modifique debe preservarlos y restaurarlos antes de retornar.

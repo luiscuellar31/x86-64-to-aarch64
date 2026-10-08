@@ -117,7 +117,12 @@ void probarMemoriaIR() {
     instPost.agregarOperando(OperandoAArch64::crearMemoria("sp", 16, ModoIndexadoAArch64::PostIndexado));
     assert(instPost.emitirTexto() == "ldr x29, [sp], #16");
 
-    std::cout << "  -> Exito en pruebas de memoria y modos de indexado en IR.\n";
+    // 9. Instruccion AArch64 bl (branch with link / llamada a subrutina)
+    InstruccionAArch64 instBl(CodigoOperacionAArch64::Bl, 15);
+    instBl.agregarOperando(OperandoAArch64::crearEtiqueta("mi_subrutina"));
+    assert(instBl.emitirTexto() == "bl mi_subrutina");
+
+    std::cout << "  -> Exito en pruebas de memoria, modos de indexado y bl en IR.\n";
 }
 
 int main() {

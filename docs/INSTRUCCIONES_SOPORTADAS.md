@@ -39,14 +39,17 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 | `jle` | `etiqueta` | Soportado (M3.2) | No | `b.le etiqueta` | Salto condicional si menor o igual con signo (`ZF = 1` o `SF != OF`). |
 | `jg` | `etiqueta` | Soportado (M3.2) | No | `b.gt etiqueta` | Salto condicional si mayor con signo (`ZF = 0` y `SF == OF`). |
 | `jge` | `etiqueta` | Soportado (M3.2) | No | `b.ge etiqueta` | Salto condicional si mayor o igual con signo (`SF == OF`). |
+| `call` | `etiqueta` | Soportado (M3.5) | No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30` / `lr` (*Branch with Link*). |
 | `push` | `reg` | Soportado (M3.4) | No | `str xReg, [sp, #-16]!` | Almacenamiento con pre-indexado en pila preservando alineación de 16 bytes. |
 | `pop` | `reg` | Soportado (M3.4) | No | `ldr xReg, [sp], #16` | Carga con post-indexado desde pila restaurando alineación de 16 bytes. |
 | `ret` | *(sin operandos)* | Soportado (V0) | No | `ret` | Retorno de subrutina (en AArch64 salta a la dirección en `x30`/`lr`). |
 
 ---
 
-## 3. Matriz de Instrucciones Planificadas (Etapas Siguientes)
+## 3. Matriz de Instrucciones Planificadas (Extensiones Futuras)
 
-| Instrucción x86-64 | Forma | Estado | Afecta Flags x86 | Equivalente AArch64 | Notas |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `call` | `etiqueta` | Planificado (M3.5) | No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30` / `lr`. |
+Para fases posteriores (Fase 4+ / V2) se contemplan extensiones como:
+- Operaciones aritméticas adicionales (`imul`, `idiv`, `inc`, `dec`, `neg`).
+- Operaciones de desplazamiento y rotación (`shl`, `shr`, `sar`).
+- Comparaciones y saltos sin signo (`ja`, `jb`, `jae`, `jbe`).
+- Desplazamiento condicional (`cmovcc`).

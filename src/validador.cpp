@@ -58,7 +58,31 @@ bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnos
         return true;
     }
 
-    // 5. Validar instrucciones de stack (push, pop)
+    // 5. Validar instruccion de llamada (call)
+    if (instruccion.esLlamada()) {
+        if (instruccion.cantidadOperandos() < 1) {
+            gestor.agregarError(CodigosDiagnostico::kFaltanOperandos, linea,
+                                "la instruccion 'call' requiere 1 operando (etiqueta destino)");
+            return false;
+        }
+
+        if (instruccion.cantidadOperandos() > 1) {
+            gestor.agregarError(CodigosDiagnostico::kExcesoOperandos, linea,
+                                "la instruccion 'call' solo admite 1 operando (etiqueta destino)");
+            return false;
+        }
+
+        const Operando& opDestino = instruccion.operando(0);
+        if (!opDestino.esEtiqueta()) {
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, linea,
+                                "el operando de 'call' debe ser una etiqueta valida");
+            return false;
+        }
+
+        return true;
+    }
+
+    // 6. Validar instrucciones de stack (push, pop)
     if (instruccion.esStack()) {
         std::string nombreMnemonic = codigoOperacionATexto(instruccion.codigoOperacion);
 
@@ -329,11 +353,12 @@ bool Validador::validarPrograma(const std::vector<Instruccion>& instrucciones, G
     for (const auto& instruccion : instrucciones) {
         if (!validarInstruccion(instruccion, gestor)) {
             todoValido = false;
-        } else if (instruccion.esSalto() && instruccion.cantidadOperandos() == 1) {
+        } else if ((instruccion.esSalto() || instruccion.esLlamada()) && instruccion.cantidadOperandos() == 1) {
             const Operando& opDestino = instruccion.operando(0);
             if (opDestino.esEtiqueta() && etiquetasDefinidas.find(opDestino.valor) == etiquetasDefinidas.end()) {
+                std::string tipoDestino = instruccion.esLlamada() ? "llamada" : "salto";
                 gestor.agregarError(CodigosDiagnostico::kEtiquetaNoDefinida, instruccion.numeroLinea,
-                                    "etiqueta de salto '" + opDestino.valor + "' no definida en el programa");
+                                    "etiqueta de " + tipoDestino + " '" + opDestino.valor + "' no definida en el programa");
                 todoValido = false;
             }
         }

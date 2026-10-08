@@ -37,6 +37,8 @@ std::string codigoOperacionATexto(CodigoOperacion codigo) {
             return "push";
         case CodigoOperacion::Pop:
             return "pop";
+        case CodigoOperacion::Call:
+            return "call";
         case CodigoOperacion::Ret:
             return "ret";
         case CodigoOperacion::Desconocido:
@@ -93,6 +95,9 @@ CodigoOperacion textoACodigoOperacion(const std::string& texto) {
     }
     if (texto == "pop") {
         return CodigoOperacion::Pop;
+    }
+    if (texto == "call") {
+        return CodigoOperacion::Call;
     }
     if (texto == "ret") {
         return CodigoOperacion::Ret;
@@ -236,6 +241,10 @@ bool Instruccion::esSaltoCondicional() const {
 bool Instruccion::esStack() const {
     return codigoOperacion == CodigoOperacion::Push ||
            codigoOperacion == CodigoOperacion::Pop;
+}
+
+bool Instruccion::esLlamada() const {
+    return codigoOperacion == CodigoOperacion::Call;
 }
 
 size_t Instruccion::cantidadOperandos() const {

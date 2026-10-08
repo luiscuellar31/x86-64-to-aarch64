@@ -166,6 +166,19 @@ void probarAnalisisStack() {
     std::cout << "  -> Exito en analisis de push y pop.\n";
 }
 
+void probarAnalisisLlamadas() {
+    std::cout << "[Test] Probando analisis de instruccion call...\n";
+
+    Instruccion instCall = AnalizadorSintactico::analizarTexto("call calcular_suma", 1);
+    assert(instCall.codigoOperacion == CodigoOperacion::Call);
+    assert(instCall.esLlamada());
+    assert(instCall.operandos.size() == 1);
+    assert(instCall.operandos[0].esEtiqueta());
+    assert(instCall.operandos[0].valor == "calcular_suma");
+
+    std::cout << "  -> Exito en analisis de call.\n";
+}
+
 int main() {
     std::cout << "=== Pruebas unitarias de AnalizadorSintactico ===\n";
     probarAnalisisInstruccionesBasicas();
@@ -173,6 +186,7 @@ int main() {
     probarAnalisisProgramaCompleto();
     probarAnalisisOperandosMemoria();
     probarAnalisisStack();
+    probarAnalisisLlamadas();
     std::cout << "Todas las pruebas del analizador sintactico pasaron con exito.\n";
     return 0;
 }

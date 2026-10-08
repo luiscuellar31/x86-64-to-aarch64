@@ -87,7 +87,20 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
         return instAArch;
     }
 
-    // 4. Instrucciones de pila / stack (push, pop)
+    // 4. Instruccion de llamada a subrutina (call)
+    if (instruccion.esLlamada()) {
+        std::string etiquetaDestino = instruccion.operando(0).valor;
+        InstruccionAArch64 instAArch(CodigoOperacionAArch64::Bl, instruccion.numeroLinea);
+        instAArch.agregarOperando(OperandoAArch64::crearEtiqueta(etiquetaDestino));
+
+        mapeoSalida.reglaId = "CALL_DIRECT";
+        mapeoSalida.explicacionCorta = "Llamada a subrutina; en x86-64 'call' empuja rip al stack, mientras que en AArch64 'bl' almacena la direccion de retorno en el link register (x30/lr).";
+        mapeoSalida.codigoOrigen = "call " + etiquetaDestino;
+        mapeoSalida.codigoDestino = instAArch.emitirTexto();
+        return instAArch;
+    }
+
+    // 5. Instrucciones de pila / stack (push, pop)
     if (instruccion.esInstruccion(CodigoOperacion::Push)) {
         InstruccionAArch64 instAArch(CodigoOperacionAArch64::Str, instruccion.numeroLinea);
         std::string regX86 = instruccion.operando(0).valor;

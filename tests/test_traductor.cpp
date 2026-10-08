@@ -265,6 +265,43 @@ void probarTraduccionStackYPrologoEpilogo() {
     std::cout << "  -> Exito en traduccion de prologo, epilogo y stack (push/pop).\n";
 }
 
+void probarTraduccionLlamadas() {
+    std::cout << "[Test] Probando traduccion de llamadas a funcion (call -> bl)...\n";
+
+    std::string codigo =
+        "inicio:\n"
+        "    mov rdi, 10\n"
+        "    call duplicar\n"
+        "    ret\n"
+        "\n"
+        "duplicar:\n"
+        "    add rdi, rdi\n"
+        "    mov rax, rdi\n"
+        "    ret\n";
+
+    ResultadoTraduccion res = Traductor::traducir(codigo);
+    assert(res.esExitoso());
+    assert(!res.tieneErrores());
+
+    // Verificamos que se genera 'bl duplicar' en AArch64
+    assert(res.codigoGenerado.find("bl duplicar") != std::string::npos);
+    assert(res.codigoGenerado.find("ret") != std::string::npos);
+    assert(res.codigoGenerado.find("duplicar:") != std::string::npos);
+
+    // Verificamos la regla pedagogica
+    bool tieneCallDirect = false;
+    for (const auto& mapeo : res.mapeos) {
+        if (mapeo.reglaId == "CALL_DIRECT") {
+            tieneCallDirect = true;
+            assert(mapeo.codigoOrigen == "call duplicar");
+            assert(mapeo.codigoDestino == "bl duplicar");
+        }
+    }
+    assert(tieneCallDirect);
+
+    std::cout << "  -> Exito en traduccion de llamadas a funcion (call -> bl).\n";
+}
+
 int main() {
     std::cout << "=== Pruebas de Traduccion de Extremo a Extremo ===\n";
     probarTraduccionMovimiento();
@@ -273,6 +310,7 @@ int main() {
     probarTraduccionComparacionYSaltos();
     probarTraduccionMemoriaLocal();
     probarTraduccionStackYPrologoEpilogo();
+    probarTraduccionLlamadas();
     probarTraduccionConEtiquetas();
     probarRechazoProgramasInvalidos();
     std::cout << "Todas las pruebas del traductor pasaron con exito.\n";

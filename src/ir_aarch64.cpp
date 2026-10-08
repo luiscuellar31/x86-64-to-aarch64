@@ -36,6 +36,8 @@ std::string codigoOperacionAArch64ATexto(CodigoOperacionAArch64 codigo) {
             return "ldr";
         case CodigoOperacionAArch64::Str:
             return "str";
+        case CodigoOperacionAArch64::Bl:
+            return "bl";
         case CodigoOperacionAArch64::Ret:
             return "ret";
         case CodigoOperacionAArch64::Desconocido:
