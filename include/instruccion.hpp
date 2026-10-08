@@ -10,6 +10,7 @@
  */
 enum class CodigoOperacion {
     Desconocido,
+    Etiqueta, // Representa una definicion de etiqueta pura (ej. "inicio:")
     Mov,
     Add,
     Sub,
@@ -22,12 +23,18 @@ enum class CodigoOperacion {
 std::string codigoOperacionATexto(CodigoOperacion codigo);
 
 /**
+ * @brief Obtiene el CodigoOperacion a partir de una cadena de mnemónico.
+ */
+CodigoOperacion textoACodigoOperacion(const std::string& texto);
+
+/**
  * @brief Tipos de operandos que puede recibir una instrucción.
  */
 enum class TipoOperando {
     Desconocido,
     Registro,
-    Inmediato
+    Inmediato,
+    Etiqueta
 };
 
 /**
@@ -51,6 +58,7 @@ struct Operando {
     // Métodos auxiliares para crear operandos de forma clara
     static Operando crearRegistro(const std::string& nombreRegistro);
     static Operando crearInmediato(const std::string& valorInmediato);
+    static Operando crearEtiqueta(const std::string& nombreEtiqueta);
 
     // Representación textual para depuración o explicaciones didácticas
     std::string aTexto() const;
@@ -63,12 +71,17 @@ struct Instruccion {
     CodigoOperacion codigoOperacion;
     std::vector<Operando> operandos;
     int numeroLinea;
+    std::string etiqueta; // Nombre de etiqueta asociada o definida en esta linea
 
     // Constructor con código de operación y número de línea
     Instruccion(CodigoOperacion codigo, int linea = 1);
 
     // Constructor con código, lista de operandos y número de línea
     Instruccion(CodigoOperacion codigo, const std::vector<Operando>& listaOperandos, int linea = 1);
+
+    // Métodos de consulta
+    bool tieneEtiqueta() const;
+    bool esEtiquetaPura() const;
 
     // Permite agregar un operando paso a paso
     void agregarOperando(const Operando& operando);
