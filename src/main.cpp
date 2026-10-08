@@ -3,6 +3,7 @@
 #include "normalizador.hpp"
 #include "analizador_sintactico.hpp"
 #include "ir_aarch64.hpp"
+#include "diagnostico.hpp"
 
 int main() {
     std::cout << "=== Demostracion del Traductor x86-64 a AArch64 ===\n\n";
@@ -21,7 +22,7 @@ int main() {
     std::cout << "  Entrada cruda:     \"" << lineaEntrada << "\"\n";
     std::cout << "  Salida normalizada: \"" << lineaNormalizada << "\"\n";
 
-    // 3. Demostracion del analizador sintactico lineal (Fase 2, Subfase 2 y 3)
+    // 3. Demostracion del analizador sintactico lineal (Fase 2, Subfases 2 y 3)
     std::cout << "\n[3] Analisis sintactico y lexico (Fase 2, Subfases 2 y 3):\n";
     std::string programaPrueba =
         "inicio:\n"
@@ -47,6 +48,17 @@ int main() {
     std::cout << "  Instruccion IR destino:   " << irAdd.emitirTexto() << "\n";
     std::cout << "  Regla aplicada:           " << irAdd.reglaId << "\n";
     std::cout << "  Explicacion didactica:    " << irAdd.explicacion << "\n";
+
+    // 5. Demostracion de Diagnosticos Estructurados (Fase 2, Subfase 5)
+    std::cout << "\n[5] Diagnosticos Estructurados (Fase 2, Subfase 5):\n";
+    GestorDiagnosticos gestor;
+    gestor.agregarError(CodigosDiagnostico::kInstruccionDesconocida, 4, "instruccion 'vmovaps' no soportada", 5);
+    gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, 7, "registro 'eax' no soportado en modo solo 64 bits", 9);
+    gestor.agregarAdvertencia("W001", 1, "directiva de ensamblador ignorada");
+
+    std::cout << "  Total diagnósticos: " << gestor.cantidadTotal() << " (Errores: "
+              << gestor.cantidadErrores() << ", Advertencias: " << gestor.cantidadAdvertencias() << ")\n";
+    gestor.imprimir();
 
     std::cout << "\nComprobacion finalizada con exito.\n";
     return 0;
