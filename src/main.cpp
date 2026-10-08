@@ -1,12 +1,15 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include "instruccion.hpp"
 #include "normalizador.hpp"
+#include "analizador_lexico.hpp"
 #include "analizador_sintactico.hpp"
 #include "ir_aarch64.hpp"
 #include "diagnostico.hpp"
 #include "resultado_traduccion.hpp"
 
-int main() {
+static void ejecutarDemostracion() {
     std::cout << "=== Demostracion del Traductor x86-64 a AArch64 ===\n\n";
 
     // 1. Demostracion del modelo de datos de instruccion (Fase 0)
@@ -78,6 +81,45 @@ int main() {
 
     std::cout << resultadoEjemplo.resumenFormateado();
 
-    std::cout << "\nComprobacion finalizada con exito.\n";
+    std::cout << "\nUso como CLI: ./x86_64_to_aarch64 <archivo.s>\n";
+}
+
+static int procesarArchivoEntrada(const std::string& rutaArchivo) {
+    std::ifstream archivo(rutaArchivo);
+    if (!archivo.is_open()) {
+        std::cerr << "Error: no se pudo abrir el archivo \"" << rutaArchivo << "\".\n";
+        return 1;
+    }
+
+    std::stringstream buffer;
+    buffer << archivo.rdbuf();
+    std::string contenido = buffer.str();
+
+    std::cout << "Analizando archivo: " << rutaArchivo << " ...\n\n";
+
+    std::vector<Instruccion> instrucciones = AnalizadorSintactico::analizarPrograma(contenido);
+    std::cout << "Instrucciones identificadas (" << instrucciones.size() << "):\n";
+    for (const auto& inst : instrucciones) {
+        inst.imprimir();
+    }
+
+    std::cout << "\nAnalisis completado con exito.\n";
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc > 1) {
+        std::string argumento = argv[1];
+        if (argumento == "-h" || argumento == "--help") {
+            std::cout << "Uso: x86_64_to_aarch64 [opciones] [archivo.s]\n\n"
+                      << "Opciones:\n"
+                      << "  -h, --help    Muestra esta ayuda\n"
+                      << "  Sin opciones  Ejecuta la demostracion interna del núcleo\n";
+            return 0;
+        }
+        return procesarArchivoEntrada(argumento);
+    }
+
+    ejecutarDemostracion();
     return 0;
 }
