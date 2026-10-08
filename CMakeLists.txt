@@ -25,6 +25,7 @@ add_executable(x86_64_to_aarch64
     src/analizador_sintactico.cpp
     src/ir_aarch64.cpp
     src/diagnostico.cpp
+    src/resultado_traduccion.cpp
 )
 
 target_include_directories(x86_64_to_aarch64 PRIVATE
@@ -95,3 +96,15 @@ target_include_directories(test_diagnostico PRIVATE
 )
 
 add_test(NAME TestDiagnostico COMMAND test_diagnostico)
+
+add_executable(test_resultado_traduccion
+    tests/test_resultado_traduccion.cpp
+    src/resultado_traduccion.cpp
+    src/diagnostico.cpp
+)
+
+target_include_directories(test_resultado_traduccion PRIVATE
+    include
+)
+
+add_test(NAME TestResultadoTraduccion COMMAND test_resultado_traduccion)

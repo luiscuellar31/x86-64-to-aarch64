@@ -4,6 +4,7 @@
 #include "analizador_sintactico.hpp"
 #include "ir_aarch64.hpp"
 #include "diagnostico.hpp"
+#include "resultado_traduccion.hpp"
 
 int main() {
     std::cout << "=== Demostracion del Traductor x86-64 a AArch64 ===\n\n";
@@ -59,6 +60,23 @@ int main() {
     std::cout << "  Total diagnósticos: " << gestor.cantidadTotal() << " (Errores: "
               << gestor.cantidadErrores() << ", Advertencias: " << gestor.cantidadAdvertencias() << ")\n";
     gestor.imprimir();
+
+    // 6. Demostracion de Resultado Estructurado de Traduccion (Fase 2, Subfase 6)
+    std::cout << "\n[6] Resultado Estructurado de Traduccion (Fase 2, Subfase 6):\n";
+    ResultadoTraduccion resultadoEjemplo;
+    resultadoEjemplo.codigoGenerado = "inicio:\n    mov x0, #42\n    add x0, x0, #5\n    ret\n";
+
+    MapeoTraduccion m1(2, "MOV_REG_IMM", "Carga inmediata en registro x0");
+    m1.codigoOrigen = "mov rax, 42";
+    m1.codigoDestino = "mov x0, #42";
+    resultadoEjemplo.agregarMapeo(m1);
+
+    MapeoTraduccion m2(3, "ARITH_ADD_IMM", "Suma con 3 operandos explicitos");
+    m2.codigoOrigen = "add rax, 5";
+    m2.codigoDestino = "add x0, x0, #5";
+    resultadoEjemplo.agregarMapeo(m2);
+
+    std::cout << resultadoEjemplo.resumenFormateado();
 
     std::cout << "\nComprobacion finalizada con exito.\n";
     return 0;
