@@ -8,9 +8,9 @@ Este documento define la sintaxis formal y las reglas léxicas del subconjunto d
 
 - **Estilo:** Intel / NASM simplificado (formato `instrucción destino, fuente`).
 - **Codificación:** UTF-8 / ASCII plano.
-- **Sensibilidad a mayúsculas (Case Sensitivity):**
-  - **Mnemónicos y registros:** Insensibles a mayúsculas. Se normalizan internamente a minúsculas (`MOV`, `Mov` y `mov` son equivalentes).
-  - **Etiquetas:** Sensibles a mayúsculas (`inicio:` es diferente de `Inicio:`).
+- **Distinción entre mayúsculas y minúsculas (*case sensitivity*):**
+  - **Mnemónicos y registros:** No distinguen mayúsculas de minúsculas. Se normalizan internamente a minúsculas (`MOV`, `Mov` y `mov` son equivalentes).
+  - **Etiquetas:** Distinguen mayúsculas de minúsculas (`inicio:` es diferente de `Inicio:`).
 - **Separadores:** Espacios en blanco (` `) o tabulaciones (`\t`) separan el mnemónico de los operandos. Una coma (`,`) separa estrictamente los operandos entre sí.
 
 ---
@@ -21,15 +21,15 @@ Este documento define la sintaxis formal y las reglas léxicas del subconjunto d
 - Las líneas vacías o compuestas únicamente por espacios/comentarios se descartan en la etapa de normalización, conservando el contador de número de línea original para diagnósticos.
 
 ```asm
-; Esto es un comentario de linea completa
-mov rax, 10    ; Comentario al final de instruccion
+; Esto es un comentario de línea completa
+mov rax, 10    ; Comentario al final de instrucción
 ```
 
 ---
 
 ## 3. Identificadores y Etiquetas
 
-- Las etiquetas deben iniciar con una letra (`a-z`, `A-Z`) o guión bajo (`_`), seguidas de caracteres alfanuméricos o guiones bajos: `^[a-zA-Z_][a-zA-Z0-9_]*$`.
+- Las etiquetas deben iniciar con una letra (`a-z`, `A-Z`) o guion bajo (`_`), seguidas de caracteres alfanuméricos o guiones bajos: `^[a-zA-Z_][a-zA-Z0-9_]*$`.
 - Las etiquetas van seguidas de dos puntos (`:`).
 - Pueden presentarse en su propia línea o precediendo a una instrucción:
 

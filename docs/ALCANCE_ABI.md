@@ -17,7 +17,7 @@ Este documento delimita los supuestos de la interfaz binaria de aplicación (ABI
 Cuando se introduzca soporte para llamadas de subrutinas (`call`):
 
 1. **Alineación de la pila:** En AArch64, el puntero de pila (`sp`) debe mantenerse estrictamente alineado a **16 bytes** en cualquier llamada externa o instrucción de acceso al stack.
-2. **Link Register (`x30` / `lr`):** A diferencia de x86-64 (donde la instrucción `call` empuja automáticamente la dirección de retorno a la pila en memoria), AArch64 guarda la dirección de retorno en el registro `x30`. En funciones no-hoja, el prólogo deberá guardar `x29` y `x30` en el stack mediante `stp x29, x30, [sp, #-16]!`.
+2. **Link Register (`x30` / `lr`):** A diferencia de x86-64 (donde la instrucción `call` empuja automáticamente la dirección de retorno a la pila en memoria), AArch64 guarda la dirección de retorno en el registro `x30`. En funciones no hoja (que realizan llamadas a otras subrutinas), el prólogo deberá guardar `x29` y `x30` en el stack mediante `stp x29, x30, [sp, #-16]!`.
 3. **Clasificación de Registros:**
-   - **Volátiles (Caller-Saved):** `x0` a `x15`. Pueden ser modificados libremente por la función invocada.
-   - **No volátiles (Callee-Saved):** `x19` a `x28`. Toda función que los modifique debe preservarlos y restaurarlos antes de retornar.
+   - **Volátiles (*caller-saved* / preservados por el llamante):** `x0` a `x15`. Pueden ser modificados libremente por la función invocada.
+   - **No volátiles (*callee-saved* / preservados por la función invocada):** `x19` a `x28`. Toda función que los modifique debe preservarlos y restaurarlos antes de retornar.

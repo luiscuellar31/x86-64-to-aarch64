@@ -41,4 +41,4 @@ Ciertos registros en AArch64 quedan reservados para uso exclusivo de la arquitec
 
 - **`x30` (`lr` - Link Register):** Almacena la dirección de retorno en llamadas a funciones. La instrucción `ret` salta a la dirección contenida en este registro.
 - **`x16` y `x17` (`ip0` / `ip1`):** Reservados como registros temporales del traductor para operaciones complejas futuras (como carga de inmediatos superiores a 16 bits mediante secuencias `movz`/`movk`).
-- **`xzr` (Zero Register):** Registro especial de sólo lectura que devuelve el valor `0` y descarta resultados de escrituras (utilizado internamente por instrucciones como `cmp`).
+- **`xzr` (Zero Register):** Registro especial de solo lectura que devuelve el valor `0` y descarta resultados de escrituras (utilizado internamente por instrucciones como `cmp`).

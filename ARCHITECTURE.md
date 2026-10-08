@@ -6,7 +6,7 @@ Este documento describe la estructura del traductor `x86-64-to-aarch64`, cómo s
 
 ## 1. Visión General
 
-El proyecto es un traductor estático fuente-a-fuente desarrollado en C++17. Su objetivo es tomar un subconjunto simplificado de ensamblador x86-64 (sintaxis Intel/NASM) y generar código equivalente en ensamblador AArch64 mediante reglas deterministas de correspondencia arquitectónica.
+El proyecto es un traductor estático de código fuente a código fuente desarrollado en C++17. Su objetivo es tomar un subconjunto simplificado de ensamblador x86-64 (sintaxis Intel/NASM) y generar código equivalente en ensamblador AArch64 mediante reglas deterministas de correspondencia arquitectónica.
 
 ---
 
