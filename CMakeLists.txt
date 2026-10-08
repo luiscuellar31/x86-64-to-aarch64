@@ -19,9 +19,25 @@ endif()
 add_executable(x86_64_to_aarch64
     src/main.cpp
     src/instruccion.cpp
+    src/normalizador.cpp
+    src/tabla_registros.cpp
 )
 
-# Directorios de encabezados
 target_include_directories(x86_64_to_aarch64 PRIVATE
     include
 )
+
+# Soporte de pruebas automatizadas
+enable_testing()
+
+add_executable(test_normalizador
+    tests/test_normalizador.cpp
+    src/normalizador.cpp
+    src/tabla_registros.cpp
+)
+
+target_include_directories(test_normalizador PRIVATE
+    include
+)
+
+add_test(NAME TestNormalizador COMMAND test_normalizador)
