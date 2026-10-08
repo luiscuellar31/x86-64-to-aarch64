@@ -23,6 +23,7 @@ add_executable(x86_64_to_aarch64
     src/tabla_registros.cpp
     src/analizador_lexico.cpp
     src/analizador_sintactico.cpp
+    src/ir_aarch64.cpp
 )
 
 target_include_directories(x86_64_to_aarch64 PRIVATE
@@ -70,3 +71,15 @@ target_include_directories(test_analizador_sintactico PRIVATE
 )
 
 add_test(NAME TestAnalizadorSintactico COMMAND test_analizador_sintactico)
+
+add_executable(test_ir
+    tests/test_ir.cpp
+    src/ir_aarch64.cpp
+    src/instruccion.cpp
+)
+
+target_include_directories(test_ir PRIVATE
+    include
+)
+
+add_test(NAME TestIR COMMAND test_ir)

@@ -50,23 +50,45 @@ std::string tipoOperandoATexto(TipoOperando tipo) {
 }
 
 Operando::Operando()
-    : tipo(TipoOperando::Desconocido), valor("") {
+    : tipo(TipoOperando::Desconocido), valor(""), valorNumerico(0) {
 }
 
-Operando::Operando(TipoOperando tipoOperando, const std::string& valorTexto)
-    : tipo(tipoOperando), valor(valorTexto) {
+Operando::Operando(TipoOperando tipoOperando, const std::string& valorTexto, int64_t valorNum)
+    : tipo(tipoOperando), valor(valorTexto), valorNumerico(valorNum) {
+}
+
+bool Operando::esRegistro() const {
+    return tipo == TipoOperando::Registro;
+}
+
+bool Operando::esInmediato() const {
+    return tipo == TipoOperando::Inmediato;
+}
+
+bool Operando::esEtiqueta() const {
+    return tipo == TipoOperando::Etiqueta;
 }
 
 Operando Operando::crearRegistro(const std::string& nombreRegistro) {
-    return Operando(TipoOperando::Registro, nombreRegistro);
+    return Operando(TipoOperando::Registro, nombreRegistro, 0);
 }
 
 Operando Operando::crearInmediato(const std::string& valorInmediato) {
-    return Operando(TipoOperando::Inmediato, valorInmediato);
+    int64_t num = 0;
+    try {
+        num = std::stoll(valorInmediato, nullptr, 0);
+    } catch (...) {
+        num = 0;
+    }
+    return Operando(TipoOperando::Inmediato, valorInmediato, num);
+}
+
+Operando Operando::crearInmediato(int64_t valorNum) {
+    return Operando(TipoOperando::Inmediato, std::to_string(valorNum), valorNum);
 }
 
 Operando Operando::crearEtiqueta(const std::string& nombreEtiqueta) {
-    return Operando(TipoOperando::Etiqueta, nombreEtiqueta);
+    return Operando(TipoOperando::Etiqueta, nombreEtiqueta, 0);
 }
 
 std::string Operando::aTexto() const {
@@ -87,6 +109,18 @@ bool Instruccion::tieneEtiqueta() const {
 
 bool Instruccion::esEtiquetaPura() const {
     return codigoOperacion == CodigoOperacion::Etiqueta;
+}
+
+bool Instruccion::esInstruccion(CodigoOperacion codigo) const {
+    return codigoOperacion == codigo;
+}
+
+size_t Instruccion::cantidadOperandos() const {
+    return operandos.size();
+}
+
+const Operando& Instruccion::operando(size_t indice) const {
+    return operandos.at(indice);
 }
 
 void Instruccion::agregarOperando(const Operando& operando) {
@@ -112,6 +146,10 @@ void Instruccion::imprimir(std::ostream& salida) const {
         const Operando& operandoActual = operandos[indice];
         salida << "    [" << indice << "] "
                << tipoOperandoATexto(operandoActual.tipo)
-               << " -> " << operandoActual.valor << "\n";
+               << " -> " << operandoActual.valor;
+        if (operandoActual.esInmediato()) {
+            salida << " (valor numerico: " << operandoActual.valorNumerico << ")";
+        }
+        salida << "\n";
     }
 }

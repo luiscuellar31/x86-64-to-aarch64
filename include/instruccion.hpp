@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cstdint>
 
 /**
  * @brief Códigos de operación x86-64 soportados inicialmente.
@@ -43,21 +44,28 @@ enum class TipoOperando {
 std::string tipoOperandoATexto(TipoOperando tipo);
 
 /**
- * @brief Representa un operando individual dentro de una instrucción.
+ * @brief Representa un operando individual dentro de una instrucción x86-64 con datos semanticos.
  */
 struct Operando {
     TipoOperando tipo;
     std::string valor;
+    int64_t valorNumerico; // Valor parsed si es inmediato numerico
 
     // Constructor por defecto
     Operando();
 
     // Constructor con tipo y valor
-    Operando(TipoOperando tipoOperando, const std::string& valorTexto);
+    Operando(TipoOperando tipoOperando, const std::string& valorTexto, int64_t valorNum = 0);
+
+    // Metodos semanticos de consulta
+    bool esRegistro() const;
+    bool esInmediato() const;
+    bool esEtiqueta() const;
 
     // Métodos auxiliares para crear operandos de forma clara
     static Operando crearRegistro(const std::string& nombreRegistro);
     static Operando crearInmediato(const std::string& valorInmediato);
+    static Operando crearInmediato(int64_t valorNum);
     static Operando crearEtiqueta(const std::string& nombreEtiqueta);
 
     // Representación textual para depuración o explicaciones didácticas
@@ -79,9 +87,12 @@ struct Instruccion {
     // Constructor con código, lista de operandos y número de línea
     Instruccion(CodigoOperacion codigo, const std::vector<Operando>& listaOperandos, int linea = 1);
 
-    // Métodos de consulta
+    // Métodos de consulta semantica
     bool tieneEtiqueta() const;
     bool esEtiquetaPura() const;
+    bool esInstruccion(CodigoOperacion codigo) const;
+    size_t cantidadOperandos() const;
+    const Operando& operando(size_t indice) const;
 
     // Permite agregar un operando paso a paso
     void agregarOperando(const Operando& operando);
