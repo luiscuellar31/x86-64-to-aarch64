@@ -2,6 +2,8 @@
 
 Este documento delimita los supuestos de la interfaz binaria de aplicación (ABI) considerados para la traducción entre **x86-64 System V** y **AArch64 AAPCS64**.
 
+**Estado de implementación:** las reglas de retorno y preservación descritas aquí son requisitos. Actualmente `call` sólo emite `bl`: no se guarda ni restaura `x30`, y las funciones llamantes pueden retornar incorrectamente. La alineación de `push`/`pop` tampoco demuestra la preservación de todos los desplazamientos de memoria x86-64.
+
 ---
 
 ## 1. Supuestos en la Etapa Inicial (V0)
@@ -67,7 +69,7 @@ El traductor soporta llamadas directas a subrutina mediante `call etiqueta`, tra
 3. **Paso de parámetros y convención de retorno:**
    - En **System V AMD64**, los primeros seis argumentos enteros se pasan en `rdi`, `rsi`, `rdx`, `rcx`, `r8`, `r9`, y el valor de retorno en `rax`.
    - En **AAPCS64**, los argumentos se reciben en `x0` a `x7`, y el retorno en `x0`.
-   - El mapeo biyectivo del traductor (`rax` → `x0`, `rdi` → `x1`, `rsi` → `x2`, etc.) asegura una correspondencia directa y determinista en llamadas simples.
+   - El mapeo inyectivo del traductor (`rax` → `x0`, `rdi` → `x1`, `rsi` → `x2`, etc.) es una convención interna para código traducido. No adapta los argumentos a una interfaz pública AAPCS64: el primer argumento permanece en `x1`, mientras AAPCS64 utiliza `x0`. La interoperabilidad con funciones externas queda fuera de este incremento de llamadas internas.
 4. **Clasificación de Registros:**
    - **Volátiles (*caller-saved* / preservados por el llamante):** `x0` a `x15`. Pueden ser modificados libremente por la función invocada.
    - **No volátiles (*callee-saved* / preservados por la función invocada):** `x19` a `x28`. Toda función que los modifique debe preservarlos y restaurarlos antes de retornar.

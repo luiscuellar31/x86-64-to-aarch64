@@ -2,6 +2,8 @@
 
 Este documento define la matriz técnica de correspondencia entre el subconjunto de x86-64 y AArch64.
 
+El estado «Soportado» registra formas reconocidas y reglas de emisión implementadas. Todavía no garantiza equivalencia funcional para todos sus operandos o programas: faltan controles de codificación, flags y stack, y preservación del retorno en llamadas.
+
 ---
 
 ## 1. Alcance de Ancho de Palabra (64 bits)

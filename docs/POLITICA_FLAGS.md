@@ -2,6 +2,8 @@
 
 Este documento define la estrategia para manejar las diferencias entre el registro de banderas de **x86-64 (RFLAGS)** y las banderas de condición de **AArch64 (PSTATE: N, Z, C, V)**.
 
+**Limitación actual:** el validador todavía no exige que cada salto condicional consuma flags de un `cmp` válido en todos los caminos ni rechaza su uso después de aritmética o lógica. La tabla de correspondencias describe las condiciones de `cmp`; su emisión aislada no garantiza la equivalencia de un programa completo.
+
 ---
 
 ## 1. Diferencia Arquitectónica Fundamental

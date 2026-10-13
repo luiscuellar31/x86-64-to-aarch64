@@ -40,6 +40,8 @@ Emisión textual y generación de mapeos pedagógicos
 
 El núcleo del traductor se encuentra desacoplado como la biblioteca estática `traductor_nucleo` (`libtraductor_nucleo.a`), consumida tanto por la interfaz de línea de comandos (CLI) como por la suite de pruebas automatizadas.
 
+El último milestone implementado es **3.6 (CLI estable)**. La consolidación de **7.1 (pruebas de parsing)** exige separadores y operandos completos y rechaza literales fuera de `int64_t`. Todavía existen bloqueos semánticos en llamadas, flags y stack antes de iniciar la GUI; el ensamblado de los ejemplos no acredita equivalencia funcional.
+
 ### Capacidades implementadas
 - **Modelo de datos semántico:** Soporte de operandos tipados (registros, inmediatos numéricos de 64 bits, etiquetas y memoria local estructurada con base y desplazamiento).
 - **Instrucciones soportadas:**
