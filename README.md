@@ -121,6 +121,8 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
+Las pruebas de traducción comparan la salida AArch64 completa con textos esperados escritos explícitamente. Cubren las formas de instrucciones implementadas, el mapeo de registros, las bases y desplazamientos de memoria local, las etiquetas y la preservación del enlace en llamadas internas.
+
 En macOS arm64 se añade una prueba nativa de retornos sucesivos y llamadas anidadas, con tiempo límite. Usa el compilador configurado y el ejemplo `09_llamadas_anidadas.s`; no requiere emulador ni dependencias nuevas.
 
 ### Uso de la herramienta CLI

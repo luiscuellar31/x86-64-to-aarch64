@@ -15,11 +15,6 @@ void probarTraduccionMovimiento() {
     assert(!resultado.tieneErrores());
     assert(resultado.mapeos.size() == 3);
 
-    // Verificamos que las instrucciones AArch64 emitidas son las correctas
-    assert(resultado.codigoGenerado.find("mov x0, #42") != std::string::npos);
-    assert(resultado.codigoGenerado.find("mov x19, x0") != std::string::npos);
-    assert(resultado.codigoGenerado.find("ret") != std::string::npos);
-
     assert(resultado.codigoGenerado ==
         "    mov x0, #42\n"
         "    mov x19, x0\n"
@@ -31,6 +26,78 @@ void probarTraduccionMovimiento() {
     assert(resultado.mapeos[2].reglaId == "RET_SIMPLE");
 
     std::cout << "  -> Exito en traduccion de mov y ret.\n";
+}
+
+void probarMapeoDeTodosLosRegistros() {
+    std::cout << "[Test] Probando el mapeo de todos los registros de 64 bits...\n";
+
+    std::string codigo =
+        "mov rax, rdi\n"
+        "mov rdi, rsi\n"
+        "mov rsi, rdx\n"
+        "mov rdx, rcx\n"
+        "mov rcx, r8\n"
+        "mov r8, r9\n"
+        "mov r9, r10\n"
+        "mov r10, r11\n"
+        "mov r11, rbx\n"
+        "mov rbx, r12\n"
+        "mov r12, r13\n"
+        "mov r13, r14\n"
+        "mov r14, r15\n"
+        "mov r15, rbp\n"
+        "mov rbp, rsp\n"
+        "mov rsp, rbp\n"
+        "ret\n";
+
+    ResultadoTraduccion resultado = Traductor::traducir(codigo);
+    assert(resultado.esExitoso());
+    assert(resultado.codigoGenerado ==
+        "    mov x0, x1\n"
+        "    mov x1, x2\n"
+        "    mov x2, x3\n"
+        "    mov x3, x4\n"
+        "    mov x4, x5\n"
+        "    mov x5, x6\n"
+        "    mov x6, x7\n"
+        "    mov x7, x8\n"
+        "    mov x8, x19\n"
+        "    mov x19, x20\n"
+        "    mov x20, x21\n"
+        "    mov x21, x22\n"
+        "    mov x22, x23\n"
+        "    mov x23, x29\n"
+        "    mov x29, sp\n"
+        "    mov sp, x29\n"
+        "    ret\n");
+}
+
+void probarTraduccionInmediatos() {
+    std::cout << "[Test] Probando inmediatos negativos y hexadecimales...\n";
+
+    std::string codigo =
+        "mov rax, -1\n"
+        "mov rbx, 0x2a\n"
+        "add rax, 0x10\n"
+        "sub rax, 0x8\n"
+        "and rbx, 0xff\n"
+        "or rbx, 0x1\n"
+        "xor rbx, 0xff\n"
+        "cmp rax, 0x10\n"
+        "ret\n";
+
+    ResultadoTraduccion resultado = Traductor::traducir(codigo);
+    assert(resultado.esExitoso());
+    assert(resultado.codigoGenerado ==
+        "    mov x0, #-1\n"
+        "    mov x19, #0x2a\n"
+        "    add x0, x0, #0x10\n"
+        "    sub x0, x0, #0x8\n"
+        "    and x19, x19, #0xff\n"
+        "    orr x19, x19, #0x1\n"
+        "    eor x19, x19, #0xff\n"
+        "    cmp x0, #0x10\n"
+        "    ret\n");
 }
 
 void probarTraduccionAritmetica() {
@@ -46,12 +113,6 @@ void probarTraduccionAritmetica() {
 
     ResultadoTraduccion resultado = Traductor::traducir(codigo);
     assert(resultado.esExitoso());
-
-    // Verificamos que add y sub tienen 3 operandos en AArch64
-    assert(resultado.codigoGenerado.find("add x0, x0, #25") != std::string::npos);
-    assert(resultado.codigoGenerado.find("sub x0, x0, #5") != std::string::npos);
-    assert(resultado.codigoGenerado.find("add x0, x0, x19") != std::string::npos);
-    assert(resultado.codigoGenerado.find("sub x0, x0, x19") != std::string::npos);
 
     assert(resultado.codigoGenerado ==
         "    mov x0, #100\n"
@@ -69,21 +130,55 @@ void probarTraduccionAritmetica() {
     std::cout << "  -> Exito en traduccion de add y sub con 3 operandos.\n";
 }
 
+void probarTraduccionSinInstrucciones() {
+    std::cout << "[Test] Probando entradas vacias y comentarios sin instrucciones...\n";
+
+    ResultadoTraduccion resultadoVacio = Traductor::traducir("");
+    assert(resultadoVacio.esExitoso());
+    assert(resultadoVacio.codigoGenerado == "");
+    assert(resultadoVacio.irDestino.empty());
+    assert(resultadoVacio.mapeos.empty());
+
+    ResultadoTraduccion resultadoComentarios = Traductor::traducir("; Cabecera\n\n  ; Comentario final");
+    assert(resultadoComentarios.esExitoso());
+    assert(resultadoComentarios.codigoGenerado == "");
+    assert(resultadoComentarios.irDestino.empty());
+    assert(resultadoComentarios.mapeos.empty());
+}
+
 void probarTraduccionConEtiquetas() {
     std::cout << "[Test] Probando programa completo con etiquetas...\n";
 
     std::string codigo =
-        "inicio:\n"
-        "    mov rax, 10\n"
-        "    add rax, 5\n"
-        "    ret\n";
+        "; Programa con etiquetas que distinguen mayusculas\n"
+        "\n"
+        "Inicio:\n"
+        "    MOV RAX, 10 ; valor inicial\n"
+        "    jmp Fin\n"
+        "\n"
+        "inicio: ADD RAX, 5\n"
+        "Fin: RET";
 
     ResultadoTraduccion resultado = Traductor::traducir(codigo);
     assert(resultado.esExitoso());
 
-    assert(resultado.codigoGenerado.find("inicio:") != std::string::npos);
-    assert(resultado.codigoGenerado.find("mov x0, #10") != std::string::npos);
-    assert(resultado.codigoGenerado.find("add x0, x0, #5") != std::string::npos);
+    assert(resultado.codigoGenerado ==
+        "Inicio:\n"
+        "    mov x0, #10\n"
+        "    b Fin\n"
+        "    inicio: add x0, x0, #5\n"
+        "    Fin: ret\n");
+
+    assert(resultado.mapeos.size() == 5);
+    assert(resultado.mapeos[0].lineaOrigenX86 == 3);
+    assert(resultado.mapeos[1].lineaOrigenX86 == 4);
+    assert(resultado.mapeos[2].lineaOrigenX86 == 5);
+    assert(resultado.mapeos[3].lineaOrigenX86 == 7);
+    assert(resultado.mapeos[4].lineaOrigenX86 == 8);
+    assert(resultado.mapeos[3].codigoOrigen == "inicio: add rax, 5");
+    assert(resultado.mapeos[3].codigoDestino == "inicio: add x0, x0, #5");
+    assert(resultado.mapeos[3].lineasDestinoAArch64 == std::vector<int>({4}));
+    assert(resultado.mapeos[4].lineasDestinoAArch64 == std::vector<int>({5}));
 
     std::cout << "  -> Exito en traduccion con etiquetas.\n";
 }
@@ -128,14 +223,6 @@ void probarTraduccionLogica() {
     ResultadoTraduccion resultado = Traductor::traducir(codigo);
     assert(resultado.esExitoso());
     assert(resultado.mapeos.size() == 7);
-
-    // Verificamos traducciones correctas en AArch64 (and, orr, eor)
-    assert(resultado.codigoGenerado.find("and x0, x0, x19") != std::string::npos);
-    assert(resultado.codigoGenerado.find("and x0, x0, #15") != std::string::npos);
-    assert(resultado.codigoGenerado.find("orr x19, x19, x4") != std::string::npos);
-    assert(resultado.codigoGenerado.find("orr x19, x19, #1") != std::string::npos);
-    assert(resultado.codigoGenerado.find("eor x0, x0, x0") != std::string::npos);
-    assert(resultado.codigoGenerado.find("eor x0, x0, #255") != std::string::npos);
 
     assert(resultado.codigoGenerado ==
         "    and x0, x0, x19\n"
@@ -184,27 +271,35 @@ void probarTraduccionComparacionYSaltos() {
     assert(resultado.esExitoso());
     assert(!resultado.tieneErrores());
 
-    // Verificamos instrucciones emitidas en AArch64
-    assert(resultado.codigoGenerado.find("cmp x0, x19") != std::string::npos);
-    assert(resultado.codigoGenerado.find("b.eq fin") != std::string::npos);
-    assert(resultado.codigoGenerado.find("cmp x0, #10") != std::string::npos);
-    assert(resultado.codigoGenerado.find("b.ne etiqueta1") != std::string::npos);
-    assert(resultado.codigoGenerado.find("b.lt etiqueta2") != std::string::npos);
-    assert(resultado.codigoGenerado.find("b.le etiqueta3") != std::string::npos);
-    assert(resultado.codigoGenerado.find("b.gt etiqueta4") != std::string::npos);
-    assert(resultado.codigoGenerado.find("b.ge etiqueta5") != std::string::npos);
-    assert(resultado.codigoGenerado.find("b fin") != std::string::npos);
-    assert(resultado.codigoGenerado.find("ret") != std::string::npos);
+    assert(resultado.codigoGenerado ==
+        "inicio:\n"
+        "    cmp x0, x19\n"
+        "    b.eq fin\n"
+        "    cmp x0, #10\n"
+        "    b.ne etiqueta1\n"
+        "etiqueta1:\n"
+        "    b.lt etiqueta2\n"
+        "etiqueta2:\n"
+        "    b.le etiqueta3\n"
+        "etiqueta3:\n"
+        "    b.gt etiqueta4\n"
+        "etiqueta4:\n"
+        "    b.ge etiqueta5\n"
+        "etiqueta5:\n"
+        "    b fin\n"
+        "fin:\n"
+        "    ret\n");
 
-    // Verificamos reglas didacticas
-    bool tieneCmpReg = false, tieneCmpImm = false, tieneB = false, tieneBEq = false;
-    for (const auto& mapeo : resultado.mapeos) {
-        if (mapeo.reglaId == "COND_CMP_REG") tieneCmpReg = true;
-        if (mapeo.reglaId == "COND_CMP_IMM") tieneCmpImm = true;
-        if (mapeo.reglaId == "JUMP_UNCOND") tieneB = true;
-        if (mapeo.reglaId == "JUMP_COND_EQ") tieneBEq = true;
-    }
-    assert(tieneCmpReg && tieneCmpImm && tieneB && tieneBEq);
+    assert(resultado.mapeos.size() == 17);
+    assert(resultado.mapeos[1].reglaId == "COND_CMP_REG");
+    assert(resultado.mapeos[2].reglaId == "JUMP_COND_EQ");
+    assert(resultado.mapeos[3].reglaId == "COND_CMP_IMM");
+    assert(resultado.mapeos[4].reglaId == "JUMP_COND_NE");
+    assert(resultado.mapeos[6].reglaId == "JUMP_COND_LT");
+    assert(resultado.mapeos[8].reglaId == "JUMP_COND_LE");
+    assert(resultado.mapeos[10].reglaId == "JUMP_COND_GT");
+    assert(resultado.mapeos[12].reglaId == "JUMP_COND_GE");
+    assert(resultado.mapeos[14].reglaId == "JUMP_UNCOND");
 
     std::cout << "  -> Exito en traduccion de cmp y saltos (jmp->b, je->b.eq, etc.).\n";
 }
@@ -217,41 +312,83 @@ void probarTraduccionMemoriaLocal() {
         "mov [rbp - 16], rbx\n"
         "mov rcx, [rbp + 16]\n"
         "mov [rbp], rdx\n"
+        "mov r8, [rbp]\n"
+        "mov [rbp + 8], r9\n"
         "ret\n";
 
     ResultadoTraduccion resultado = Traductor::traducir(codigo);
     assert(resultado.esExitoso());
     assert(!resultado.tieneErrores());
-    assert(resultado.mapeos.size() == 5);
-
-    // 1. Carga con desplazamiento negativo: ldr x0, [x29, #-8]
-    assert(resultado.codigoGenerado.find("ldr x0, [x29, #-8]") != std::string::npos);
-    assert(resultado.mapeos[0].reglaId == "MEM_LOAD_STACK");
-
-    // 2. Almacenamiento con desplazamiento negativo: str x19, [x29, #-16]
-    assert(resultado.codigoGenerado.find("str x19, [x29, #-16]") != std::string::npos);
-    assert(resultado.mapeos[1].reglaId == "MEM_STORE_STACK");
-
-    // 3. Carga con desplazamiento positivo: ldr x4, [x29, #16]
-    assert(resultado.codigoGenerado.find("ldr x4, [x29, #16]") != std::string::npos);
-    assert(resultado.mapeos[2].reglaId == "MEM_LOAD_STACK");
-
-    // 4. Almacenamiento con desplazamiento cero: str x3, [x29]
-    assert(resultado.codigoGenerado.find("str x3, [x29]") != std::string::npos);
-    assert(resultado.mapeos[3].reglaId == "MEM_STORE_STACK");
+    assert(resultado.mapeos.size() == 7);
 
     assert(resultado.codigoGenerado ==
         "    ldr x0, [x29, #-8]\n"
         "    str x19, [x29, #-16]\n"
         "    ldr x4, [x29, #16]\n"
         "    str x3, [x29]\n"
+        "    ldr x5, [x29]\n"
+        "    str x6, [x29, #8]\n"
         "    ret\n");
 
-    // 5. Retorno
-    assert(resultado.codigoGenerado.find("ret") != std::string::npos);
-    assert(resultado.mapeos[4].reglaId == "RET_SIMPLE");
+    assert(resultado.mapeos[0].reglaId == "MEM_LOAD_STACK");
+    assert(resultado.mapeos[1].reglaId == "MEM_STORE_STACK");
+    assert(resultado.mapeos[2].reglaId == "MEM_LOAD_STACK");
+    assert(resultado.mapeos[3].reglaId == "MEM_STORE_STACK");
+    assert(resultado.mapeos[4].reglaId == "MEM_LOAD_STACK");
+    assert(resultado.mapeos[5].reglaId == "MEM_STORE_STACK");
+    assert(resultado.mapeos[6].reglaId == "RET_SIMPLE");
 
     std::cout << "  -> Exito en traduccion de memoria local (ldr/str) a AArch64.\n";
+}
+
+void probarTraduccionMemoriaConBaseRsp() {
+    std::cout << "[Test] Probando memoria con base rsp y desplazamientos negativos, positivos y cero...\n";
+
+    std::string codigo =
+        "mov rax, [rsp - 8]\n"
+        "mov [rsp - 16], rbx\n"
+        "mov rcx, [rsp + 16]\n"
+        "mov [rsp], rdx\n"
+        "mov r8, [rsp]\n"
+        "mov [rsp + 8], r9\n"
+        "ret\n";
+
+    ResultadoTraduccion resultado = Traductor::traducir(codigo);
+    assert(resultado.esExitoso());
+    assert(resultado.codigoGenerado ==
+        "    ldr x0, [sp, #-8]\n"
+        "    str x19, [sp, #-16]\n"
+        "    ldr x4, [sp, #16]\n"
+        "    str x3, [sp]\n"
+        "    ldr x5, [sp]\n"
+        "    str x6, [sp, #8]\n"
+        "    ret\n");
+}
+
+void probarTraduccionAritmeticaYComparacionConRsp() {
+    std::cout << "[Test] Probando ajustes de pila y comparaciones con rsp...\n";
+
+    std::string codigo =
+        "mov rax, 16\n"
+        "sub rsp, 32\n"
+        "add rsp, rax\n"
+        "sub rsp, rax\n"
+        "add rsp, 32\n"
+        "cmp rsp, rax\n"
+        "cmp rsp, 0\n"
+        "ret\n";
+
+    ResultadoTraduccion resultado = Traductor::traducir(codigo);
+    assert(resultado.esExitoso());
+    assert(resultado.codigoGenerado ==
+        "    mov x0, #16\n"
+        "    sub sp, sp, #32\n"
+        "    add sp, sp, x0\n"
+        "    sub sp, sp, x0\n"
+        "    add sp, sp, #32\n"
+        "    cmp sp, x0\n"
+        "    cmp sp, #0\n"
+        "    ret\n");
 }
 
 void probarTraduccionStackYPrologoEpilogo() {
@@ -267,16 +404,20 @@ void probarTraduccionStackYPrologoEpilogo() {
         "    pop rbp\n"
         "    ret\n";
 
-    ResultadoTraduccion resultadoDestinoInvertido = Traductor::traducir(codigoPrologo);
-    assert(resultadoDestinoInvertido.esExitoso());
-    assert(!resultadoDestinoInvertido.tieneErrores());
-
-    assert(resultadoDestinoInvertido.codigoGenerado.find("str x29, [sp, #-16]!") != std::string::npos);
-    assert(resultadoDestinoInvertido.codigoGenerado.find("mov x29, sp") != std::string::npos);
-    assert(resultadoDestinoInvertido.codigoGenerado.find("mov x0, #42") != std::string::npos);
-    assert(resultadoDestinoInvertido.codigoGenerado.find("mov sp, x29") != std::string::npos);
-    assert(resultadoDestinoInvertido.codigoGenerado.find("ldr x29, [sp], #16") != std::string::npos);
-    assert(resultadoDestinoInvertido.codigoGenerado.find("ret") != std::string::npos);
+    ResultadoTraduccion resultadoPrologo = Traductor::traducir(codigoPrologo);
+    assert(resultadoPrologo.esExitoso());
+    assert(!resultadoPrologo.tieneErrores());
+    assert(resultadoPrologo.codigoGenerado ==
+        "inicio:\n"
+        "    str x29, [sp, #-16]!\n"
+        "    mov x29, sp\n"
+        "    mov x0, #42\n"
+        "    mov sp, x29\n"
+        "    ldr x29, [sp], #16\n"
+        "    ret\n");
+    assert(resultadoPrologo.mapeos.size() == 7);
+    assert(resultadoPrologo.mapeos[1].reglaId == "STACK_PUSH_REG");
+    assert(resultadoPrologo.mapeos[5].reglaId == "STACK_POP_REG");
 
     // 2. Preservacion de registro callee-saved (rbx -> x19)
     std::string codigoCallee =
@@ -285,11 +426,16 @@ void probarTraduccionStackYPrologoEpilogo() {
         "pop rbx\n"
         "ret\n";
 
-    ResultadoTraduccion resultadoRegistro32Bits = Traductor::traducir(codigoCallee);
-    assert(resultadoRegistro32Bits.esExitoso());
-    assert(resultadoRegistro32Bits.codigoGenerado.find("str x19, [sp, #-16]!") != std::string::npos);
-    assert(resultadoRegistro32Bits.codigoGenerado.find("mov x19, #10") != std::string::npos);
-    assert(resultadoRegistro32Bits.codigoGenerado.find("ldr x19, [sp], #16") != std::string::npos);
+    ResultadoTraduccion resultadoPreservacion = Traductor::traducir(codigoCallee);
+    assert(resultadoPreservacion.esExitoso());
+    assert(resultadoPreservacion.codigoGenerado ==
+        "    str x19, [sp, #-16]!\n"
+        "    mov x19, #10\n"
+        "    ldr x19, [sp], #16\n"
+        "    ret\n");
+    assert(resultadoPreservacion.mapeos.size() == 4);
+    assert(resultadoPreservacion.mapeos[0].reglaId == "STACK_PUSH_REG");
+    assert(resultadoPreservacion.mapeos[2].reglaId == "STACK_POP_REG");
 
     std::cout << "  -> Exito en traduccion de prologo, epilogo y stack (push/pop).\n";
 }
@@ -311,11 +457,6 @@ void probarTraduccionLlamadas() {
     ResultadoTraduccion resultado = Traductor::traducir(codigo);
     assert(resultado.esExitoso());
     assert(!resultado.tieneErrores());
-
-    // Verificamos que se genera 'bl duplicar' en AArch64
-    assert(resultado.codigoGenerado.find("bl duplicar") != std::string::npos);
-    assert(resultado.codigoGenerado.find("ret") != std::string::npos);
-    assert(resultado.codigoGenerado.find("duplicar:") != std::string::npos);
 
     assert(resultado.codigoGenerado ==
         "inicio:\n"
@@ -446,15 +587,20 @@ void probarSecuenciaDeLlamadaConEtiqueta() {
 int main() {
     std::cout << "=== Pruebas de Traduccion de Extremo a Extremo ===\n";
     probarTraduccionMovimiento();
+    probarMapeoDeTodosLosRegistros();
+    probarTraduccionInmediatos();
     probarTraduccionAritmetica();
     probarTraduccionLogica();
     probarTraduccionComparacionYSaltos();
     probarTraduccionMemoriaLocal();
+    probarTraduccionMemoriaConBaseRsp();
+    probarTraduccionAritmeticaYComparacionConRsp();
     probarTraduccionStackYPrologoEpilogo();
     probarTraduccionLlamadas();
     probarLlamadasSucesivasYAnidadas();
     probarSecuenciaDeLlamadaConEtiqueta();
     probarTraduccionConEtiquetas();
+    probarTraduccionSinInstrucciones();
     probarRechazoProgramasInvalidos();
     std::cout << "Todas las pruebas del traductor pasaron con exito.\n";
     return 0;
