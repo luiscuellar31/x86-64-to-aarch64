@@ -276,6 +276,56 @@ static void probarEtiquetaDuplicadaSinSobrescribir(const std::string& rutaEntrad
     assert(contenidoPreservado.str() == "contenido anterior\n");
 }
 
+static void probarCorpusInvalidoSinSobrescribir(const std::string& rutaSalida) {
+    struct CasoRechazoCLI {
+        std::string nombreArchivo;
+        std::string diagnosticoEsperado;
+    };
+
+    const std::vector<CasoRechazoCLI> casos = {
+        {"01_sintaxis_att.s", "linea 2: [E030]"},
+        {"02_registro_32bits.s", "linea 2: [E021]"},
+        {"03_demasiados_operandos.s", "linea 2: [E022]"},
+        {"04_instruccion_no_soportada.s", "linea 2: [E001]"},
+        {"05_memoria_invalida.s", "linea 3: [E014]"},
+        {"06_stack_invalido.s", "linea 3: [E021]"},
+        {"07_llamada_invalida.s", "linea 3: [E040]"},
+        {"08_base_memoria_no_local.s", "linea 2: [E014]"},
+        {"09_rsp_como_dato.s", "linea 2: [E014]"},
+        {"10_etiqueta_duplicada.s", "linea 3: [E041]"},
+        {"11_instruccion_sse.s", "linea 2: [E001]"},
+        {"12_instruccion_x87.s", "linea 2: [E001]"},
+        {"13_mnemonico_desconocido.s", "linea 2: [E001]"},
+        {"14_registro_8bits.s", "linea 2: [E021]"},
+        {"15_registro_16bits.s", "linea 2: [E021]"},
+        {"16_direccionamiento_complejo.s", "linea 2: [E030]"}
+    };
+
+    for (const auto& caso : casos) {
+        std::cout << "[Test CLI rechazo] " << caso.nombreArchivo << std::endl;
+        std::ofstream archivoSalida(rutaSalida);
+        assert(archivoSalida.is_open());
+        archivoSalida << "contenido anterior\n";
+        archivoSalida.close();
+
+        OpcionesCLI opciones;
+        opciones.archivoEntrada = std::string(DIRECTORIO_EJEMPLOS_INVALIDOS) + "/" + caso.nombreArchivo;
+        opciones.archivoSalida = rutaSalida;
+        opciones.explicar = true;
+        opciones.volcarIR = true;
+        std::stringstream flujoSalida, flujoError;
+        assert(AnalizadorCLI::ejecutar(opciones, flujoSalida, flujoError) == 1);
+        assert(flujoSalida.str().empty());
+        assert(flujoError.str().find(caso.diagnosticoEsperado) != std::string::npos);
+
+        std::ifstream archivoPreservado(rutaSalida);
+        assert(archivoPreservado.is_open());
+        std::stringstream contenidoPreservado;
+        contenidoPreservado << archivoPreservado.rdbuf();
+        assert(contenidoPreservado.str() == "contenido anterior\n");
+    }
+}
+
 void probarEjecucionCLI() {
     std::cout << "[Test CLI] Probando ejecucion y despacho de opciones...\n";
     probarEjecucionAyuda();
@@ -299,6 +349,7 @@ void probarEjecucionCLI() {
     probarArchivoSalida(rutaEntrada, rutaSalida);
     probarRechazoSinSobrescribir(rutaEntrada, rutaSalida);
     probarEtiquetaDuplicadaSinSobrescribir(rutaEntrada, rutaSalida);
+    probarCorpusInvalidoSinSobrescribir(rutaSalida);
 
     std::remove(rutaEntrada.c_str());
     std::remove(rutaSalida.c_str());

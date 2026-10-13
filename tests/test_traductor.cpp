@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <vector>
 #include "traductor.hpp"
 
 void probarTraduccionMovimiento() {
@@ -183,29 +184,58 @@ void probarTraduccionConEtiquetas() {
     std::cout << "  -> Exito en traduccion con etiquetas.\n";
 }
 
+static void comprobarRechazoSinSalida(const std::string& instruccion, const std::string& codigoDiagnostico) {
+    std::cout << "[Test rechazo] " << instruccion << std::endl;
+
+    std::string codigo = "; Cabecera\nmov rax, 1\n\n";
+    codigo += instruccion + "\nret\n";
+    ResultadoTraduccion resultado = Traductor::traducir(codigo);
+    assert(!resultado.esExitoso());
+    assert(resultado.tieneErrores());
+    assert(resultado.diagnosticos.size() == 1);
+    assert(resultado.diagnosticos[0].codigo == codigoDiagnostico);
+    assert(resultado.diagnosticos[0].numeroLinea == 4);
+    assert(resultado.diagnosticos[0].severidad == SeveridadDiagnostico::Error);
+    assert(!resultado.diagnosticos[0].mensaje.empty());
+    assert(resultado.codigoGenerado.empty());
+    assert(resultado.irDestino.empty());
+    assert(resultado.mapeos.empty());
+}
+
 void probarRechazoProgramasInvalidos() {
-    std::cout << "[Test] Probando rechazo de programas invalidos y emision de diagnosticos...\n";
+    const std::vector<std::string> instruccionesExcluidas = {
+        "vmovaps ymm0, ymm1", "vaddps ymm0, ymm1, ymm2",
+        "movaps xmm0, xmm1", "addsd xmm0, [rbp]",
+        "fld [rbp]", "fld1", "instruccion_desconocida rax, 1"
+    };
+    for (const auto& instruccion : instruccionesExcluidas) {
+        comprobarRechazoSinSalida(instruccion, CodigosDiagnostico::kInstruccionDesconocida);
+    }
 
-    // 1. Destino inmediato (invertido)
-    std::string codigoInvertido = "mov 42, rax\nret\n";
-    ResultadoTraduccion resultadoDestinoInvertido = Traductor::traducir(codigoInvertido);
-    assert(!resultadoDestinoInvertido.esExitoso());
-    assert(resultadoDestinoInvertido.tieneErrores());
-    assert(resultadoDestinoInvertido.diagnosticos[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+    const std::vector<std::string> sintaxisExcluida = {
+        "mov rax, [rbp + rcx*4 + 8]", "mov rax, [rbp + rcx]",
+        "mov rax, [rip + variable]", "mov rax, [0x1000]",
+        "mov rax, dword [rbp]", "movq $10, %rax", "add %rbx, %rax"
+    };
+    for (const auto& instruccion : sintaxisExcluida) {
+        comprobarRechazoSinSalida(instruccion, CodigosDiagnostico::kSintaxisInvalida);
+    }
 
-    // 2. Registro no soportado de 32 bits
-    std::string codigoReg32 = "mov eax, 10\nret\n";
-    ResultadoTraduccion resultadoRegistro32Bits = Traductor::traducir(codigoReg32);
-    assert(!resultadoRegistro32Bits.esExitoso());
-    assert(resultadoRegistro32Bits.diagnosticos[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
+    const std::vector<std::string> formasExcluidas = {
+        "mov 42, rax", "mov rax, [rdi]", "mov [rbp], [rsp]",
+        "mov [rbp], 42", "call rax", "call 42", "call [rbp]"
+    };
+    for (const auto& instruccion : formasExcluidas) {
+        comprobarRechazoSinSalida(instruccion, CodigosDiagnostico::kFormaOperandoNoSoportada);
+    }
 
-    // 3. Instruccion desconocida
-    std::string codigoDesc = "vmovaps ymm0, ymm1\nret\n";
-    ResultadoTraduccion resultadoInstruccionDesconocida = Traductor::traducir(codigoDesc);
-    assert(!resultadoInstruccionDesconocida.esExitoso());
-    assert(resultadoInstruccionDesconocida.diagnosticos[0].codigo == CodigosDiagnostico::kInstruccionDesconocida);
+    const std::vector<std::string> subregistros = {"al", "ax", "eax"};
+    for (const auto& subregistro : subregistros) {
+        comprobarRechazoSinSalida("mov " + subregistro + ", 10", CodigosDiagnostico::kRegistroNoSoportado64Bit);
+        comprobarRechazoSinSalida("mov rax, " + subregistro, CodigosDiagnostico::kRegistroNoSoportado64Bit);
+    }
 
-    std::cout << "  -> Exito en rechazo y diagnosticos de casos invalidos.\n";
+    comprobarRechazoSinSalida("call funcion_externa", CodigosDiagnostico::kEtiquetaNoDefinida);
 }
 
 void probarTraduccionLogica() {

@@ -86,6 +86,9 @@ add_test(NAME TestTraductor COMMAND test_traductor)
 
 add_executable(test_cli tests/test_cli.cpp)
 target_link_libraries(test_cli PRIVATE traductor_nucleo)
+target_compile_definitions(test_cli PRIVATE
+    DIRECTORIO_EJEMPLOS_INVALIDOS="${CMAKE_CURRENT_SOURCE_DIR}/examples/invalidos"
+)
 add_test(NAME TestCLI COMMAND test_cli)
 
 # Ejecutar el ensamblador traducido en el host soportado, con un tiempo limite.
