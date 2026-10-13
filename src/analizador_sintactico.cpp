@@ -1,8 +1,7 @@
 #include "analizador_sintactico.hpp"
 #include <cctype>
 
-Operando AnalizadorSintactico::clasificarOperando(const std::string& textoOperando) {
-    std::vector<Token> tokens = AnalizadorLexico::tokenizarLinea(textoOperando, 1);
+static Operando clasificarTokensOperando(const std::vector<Token>& tokens) {
     if (tokens.empty()) {
         return Operando(TipoOperando::Desconocido, "");
     }
@@ -10,18 +9,26 @@ Operando AnalizadorSintactico::clasificarOperando(const std::string& textoOperan
     const Token& primerToken = tokens[0];
     if (primerToken.es(TipoToken::CorcheteAbre)) {
         size_t indice = 0;
-        return analizarOperandoMemoria(tokens, indice);
-    }
-    if (primerToken.es(TipoToken::Registro)) {
-        return Operando::crearRegistro(primerToken.texto);
-    }
-    if (primerToken.es(TipoToken::Inmediato)) {
-        return Operando::crearInmediato(primerToken.texto);
-    }
-    if (primerToken.es(TipoToken::Identificador)) {
-        return Operando::crearEtiqueta(primerToken.texto);
+        Operando operando = AnalizadorSintactico::analizarOperandoMemoria(tokens, indice);
+        if (indice == tokens.size()) {
+            return operando;
+        }
+    } else if (tokens.size() == 1) {
+        if (primerToken.es(TipoToken::Registro)) {
+            return Operando::crearRegistro(primerToken.texto);
+        }
+        if (primerToken.es(TipoToken::Inmediato)) {
+            return Operando::crearInmediato(primerToken.texto);
+        }
+        if (primerToken.es(TipoToken::Identificador)) {
+            return Operando::crearEtiqueta(primerToken.texto);
+        }
     }
     return Operando(TipoOperando::Desconocido, primerToken.texto);
+}
+
+Operando AnalizadorSintactico::clasificarOperando(const std::string& textoOperando) {
+    return clasificarTokensOperando(AnalizadorLexico::tokenizarLinea(textoOperando, 1));
 }
 
 Operando AnalizadorSintactico::analizarOperandoMemoria(const std::vector<Token>& tokens, size_t& indice) {
@@ -29,101 +36,48 @@ Operando AnalizadorSintactico::analizarOperandoMemoria(const std::vector<Token>&
         return Operando(TipoOperando::Desconocido, "");
     }
 
-    indice++; // Consumir '['
-    std::string textoReconstruido = "[";
-
-    if (indice >= tokens.size() || tokens[indice].es(TipoToken::FinDeLinea)) {
+    size_t inicio = indice;
+    indice++;
+    while (indice < tokens.size() && !tokens[indice].es(TipoToken::CorcheteCierra) &&
+           !tokens[indice].es(TipoToken::FinDeLinea)) {
+        indice++;
+    }
+    if (indice >= tokens.size() || !tokens[indice].es(TipoToken::CorcheteCierra)) {
         return Operando(TipoOperando::Desconocido, "[");
     }
+    size_t cierre = indice;
+    indice++; // Consumir ']'; las formas invalidas tambien avanzan el indice.
 
-    // Esperamos un registro base (o identificador)
-    if (!tokens[indice].es(TipoToken::Registro) && !tokens[indice].es(TipoToken::Identificador)) {
-        while (indice < tokens.size() && !tokens[indice].es(TipoToken::CorcheteCierra) && !tokens[indice].es(TipoToken::FinDeLinea)) {
-            textoReconstruido += tokens[indice].texto;
-            indice++;
-        }
-        if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
-            textoReconstruido += "]";
-            indice++;
-        }
-        return Operando(TipoOperando::Desconocido, textoReconstruido);
+    if (cierre < inicio + 2 ||
+        (!tokens[inicio + 1].es(TipoToken::Registro) && !tokens[inicio + 1].es(TipoToken::Identificador))) {
+        return Operando(TipoOperando::Desconocido, "[");
     }
-
-    std::string registroBase = tokens[indice].texto;
-    textoReconstruido += registroBase;
-    indice++;
-
-    int64_t desplazamiento = 0;
-
-    // Caso 1: Cierre directo [rbp]
-    if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
-        indice++; // Consumir ']'
+    std::string registroBase = tokens[inicio + 1].texto;
+    if (cierre == inicio + 2) {
         return Operando::crearMemoria(registroBase, 0, 64);
     }
 
-    // Caso 2: Operador Mas o Menos explicito (ej. [rbp - 8], [rbp + 16])
-    if (indice < tokens.size() && (tokens[indice].es(TipoToken::Mas) || tokens[indice].es(TipoToken::Menos))) {
-        bool esResta = tokens[indice].es(TipoToken::Menos);
-        textoReconstruido += esResta ? " - " : " + ";
-        indice++;
-
-        if (indice < tokens.size() && tokens[indice].es(TipoToken::Inmediato)) {
-            int64_t valorNum = 0;
-            try {
-                valorNum = std::stoll(tokens[indice].texto, nullptr, 0);
-            } catch (...) {
-                valorNum = 0;
-            }
-            desplazamiento = esResta ? -valorNum : valorNum;
-            textoReconstruido += tokens[indice].texto;
-            indice++;
-        } else {
-            // Sintaxis invalida dentro del corchete
-            while (indice < tokens.size() && !tokens[indice].es(TipoToken::CorcheteCierra) && !tokens[indice].es(TipoToken::FinDeLinea)) {
-                textoReconstruido += tokens[indice].texto;
-                indice++;
-            }
-            if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
-                textoReconstruido += "]";
-                indice++;
-            }
-            return Operando(TipoOperando::Desconocido, textoReconstruido);
+    std::string literal;
+    const Token& tokenDesplazamiento = tokens[inicio + 2];
+    if (cierre == inicio + 3 && tokenDesplazamiento.es(TipoToken::Inmediato) &&
+        !tokenDesplazamiento.texto.empty() &&
+        (tokenDesplazamiento.texto[0] == '+' || tokenDesplazamiento.texto[0] == '-')) {
+        literal = tokenDesplazamiento.texto;
+    } else if (cierre == inicio + 4 &&
+               (tokenDesplazamiento.es(TipoToken::Mas) || tokenDesplazamiento.es(TipoToken::Menos))) {
+        const Token& magnitud = tokens[inicio + 3];
+        if (magnitud.es(TipoToken::Inmediato) && !magnitud.texto.empty() &&
+            magnitud.texto[0] != '+' && magnitud.texto[0] != '-') {
+            literal = tokenDesplazamiento.texto + magnitud.texto;
         }
     }
-    // Caso 3: Inmediato con signo ya incorporado (ej. [rbp-8] donde el lexer agrupo "-8")
-    else if (indice < tokens.size() && tokens[indice].es(TipoToken::Inmediato)) {
-        int64_t valorNum = 0;
-        try {
-            valorNum = std::stoll(tokens[indice].texto, nullptr, 0);
-        } catch (...) {
-            valorNum = 0;
-        }
-        desplazamiento = valorNum;
-        if (desplazamiento >= 0) {
-            textoReconstruido += " + " + std::to_string(desplazamiento);
-        } else {
-            textoReconstruido += " - " + std::to_string(-desplazamiento);
-        }
-        indice++;
-    }
 
-    // El token siguiente debe ser CorcheteCierra ']'
-    if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
-        indice++; // Consumir ']'
-        return Operando::crearMemoria(registroBase, desplazamiento, 64);
+    // Convertir con el signo incluido evita negar INT64_MIN y detecta desbordamientos.
+    Operando desplazamiento = Operando::crearInmediato(literal);
+    if (!desplazamiento.esInmediato()) {
+        return Operando(TipoOperando::Desconocido, "[");
     }
-
-    // Si hay tokens adicionales no soportados (ej. indexacion compleja [base+index*4])
-    while (indice < tokens.size() && !tokens[indice].es(TipoToken::CorcheteCierra) && !tokens[indice].es(TipoToken::FinDeLinea)) {
-        textoReconstruido += " " + tokens[indice].texto;
-        indice++;
-    }
-    if (indice < tokens.size() && tokens[indice].es(TipoToken::CorcheteCierra)) {
-        textoReconstruido += "]";
-        indice++;
-    }
-
-    return Operando(TipoOperando::Desconocido, textoReconstruido);
+    return Operando::crearMemoria(registroBase, desplazamiento.valorNumerico, 64);
 }
 
 Instruccion AnalizadorSintactico::analizarTokens(const std::vector<Token>& tokens) {
@@ -155,6 +109,13 @@ Instruccion AnalizadorSintactico::analizarTokens(const std::vector<Token>& token
         return instVacia;
     }
 
+    if (!tokens[indice].es(TipoToken::Identificador)) {
+        Instruccion invalida(CodigoOperacion::Desconocido, numeroLinea);
+        invalida.errorSintactico = Diagnostico::crearError(
+            CodigosDiagnostico::kSintaxisInvalida, numeroLinea, "se esperaba un mnemonico o una etiqueta valida");
+        return invalida;
+    }
+
     std::string mnemonicoTexto = tokens[indice].texto;
     std::string mnemonicoNormalizado = "";
     for (char c : mnemonicoTexto) {
@@ -168,33 +129,50 @@ Instruccion AnalizadorSintactico::analizarTokens(const std::vector<Token>& token
     }
     indice++;
 
-    // 3. Procesar los operandos restantes separados por coma
-    while (indice < tokens.size()) {
-        const Token& tokenActual = tokens[indice];
-        if (tokenActual.es(TipoToken::FinDeLinea)) {
-            break;
-        }
+    if (indice < tokens.size() && !tokens[indice].es(TipoToken::FinDeLinea) &&
+        tokens[indice].columna <= tokens[indice - 1].columna + static_cast<int>(mnemonicoTexto.size())) {
+        instruccion.errorSintactico = Diagnostico::crearError(
+            CodigosDiagnostico::kSintaxisInvalida, numeroLinea, "el mnemonico y sus operandos requieren un espacio separador");
+        return instruccion;
+    }
 
-        if (tokenActual.es(TipoToken::Coma)) {
+    // Cada campo entre comas debe contener exactamente un operando completo.
+    while (indice < tokens.size() && !tokens[indice].es(TipoToken::FinDeLinea)) {
+        size_t inicioOperando = indice;
+        int profundidadCorchetes = 0;
+        while (indice < tokens.size() && !tokens[indice].es(TipoToken::FinDeLinea)) {
+            if (tokens[indice].es(TipoToken::Coma) && profundidadCorchetes == 0) {
+                break;
+            }
+            if (tokens[indice].es(TipoToken::CorcheteAbre)) {
+                profundidadCorchetes++;
+            } else if (tokens[indice].es(TipoToken::CorcheteCierra)) {
+                profundidadCorchetes--;
+            }
             indice++;
-            continue;
         }
 
-        if (tokenActual.es(TipoToken::CorcheteAbre)) {
-            instruccion.agregarOperando(analizarOperandoMemoria(tokens, indice));
-            continue;
+        std::vector<Token> tokensOperando(tokens.begin() + inicioOperando, tokens.begin() + indice);
+        Operando operando = clasificarTokensOperando(tokensOperando);
+        instruccion.agregarOperando(operando);
+        if (operando.tipo == TipoOperando::Desconocido) {
+            bool esLiteralInvalido = tokensOperando.size() == 1 && tokensOperando[0].es(TipoToken::Inmediato);
+            std::string codigoError = esLiteralInvalido ? CodigosDiagnostico::kInmediatoInvalido
+                                                     : CodigosDiagnostico::kSintaxisInvalida;
+            std::string mensaje = esLiteralInvalido ? "literal inmediato invalido o fuera del rango de int64_t"
+                                                   : "se esperaba un operando completo; revise comas, corchetes y signos";
+            instruccion.errorSintactico = Diagnostico::crearError(codigoError, numeroLinea, mensaje);
+            return instruccion;
         }
 
-        if (tokenActual.es(TipoToken::Registro)) {
-            instruccion.agregarOperando(Operando::crearRegistro(tokenActual.texto));
-        } else if (tokenActual.es(TipoToken::Inmediato)) {
-            instruccion.agregarOperando(Operando::crearInmediato(tokenActual.texto));
-        } else if (tokenActual.es(TipoToken::Identificador)) {
-            instruccion.agregarOperando(Operando::crearEtiqueta(tokenActual.texto));
-        } else {
-            instruccion.agregarOperando(Operando(TipoOperando::Desconocido, tokenActual.texto));
+        if (indice < tokens.size() && tokens[indice].es(TipoToken::Coma)) {
+            indice++;
+            if (indice >= tokens.size() || tokens[indice].es(TipoToken::FinDeLinea)) {
+                instruccion.errorSintactico = Diagnostico::crearError(
+                    CodigosDiagnostico::kSintaxisInvalida, numeroLinea, "falta un operando despues de la coma");
+                return instruccion;
+            }
         }
-        indice++;
     }
 
     return instruccion;

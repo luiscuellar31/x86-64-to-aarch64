@@ -26,6 +26,10 @@ void probarNormalizacionLineaIndividual() {
     // 7. Etiqueta con instruccion en la misma linea
     assert(Normalizador::normalizarLinea("Inicio: MOV RAX, 10") == "Inicio: mov rax, 10");
 
+    // Conservar separadores invalidos; la normalizacion no debe reparar la entrada.
+    assert(Normalizador::normalizarLinea("ADD RAX,,5") == "add rax, , 5");
+    assert(Normalizador::normalizarLinea("ret ,").find(',') != std::string::npos);
+
     std::cout << "  -> Exito en normalizacion individual.\n";
 }
 

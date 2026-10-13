@@ -31,6 +31,7 @@ mov rax, 10    ; Comentario al final de instrucción
 
 - Las etiquetas deben iniciar con una letra (`a-z`, `A-Z`) o guion bajo (`_`), seguidas de caracteres alfanuméricos o guiones bajos: `^[a-zA-Z_][a-zA-Z0-9_]*$`.
 - Las etiquetas van seguidas de dos puntos (`:`).
+- Los nombres de registros se reservan para operandos y no se admiten como etiquetas.
 - Pueden presentarse en su propia línea o precediendo a una instrucción:
 
 ```asm
@@ -47,6 +48,8 @@ bucle: add rax, 1
 - **Enteros decimales:** Con o sin signo explícito (`10`, `-5`, `0`, `+42`).
 - **Enteros hexadecimales:** Prefijo `0x` o `0X` seguido de dígitos hexadecimales (`0x1F`, `0x20`).
 - Tamaño admitido inicialmente: valores enteros con signo que caben en 64 bits (`int64_t`).
+- El signo debe estar unido al literal. Los decimales con ceros iniciales siguen siendo decimales (`010` representa 10 en el AST); no se interpreta notación octal.
+- Los literales incompletos o fuera de rango se rechazan; nunca se sustituyen por cero. La codificación de estos valores en instrucciones AArch64 todavía requiere consolidación.
 
 ---
 
@@ -58,13 +61,14 @@ bucle: add rax, 1
 - **Instrucción admitida:** Exclusivamente en `mov`:
   - Carga (*load*): `mov reg, [rbp - imm]` → `ldr reg, [x29, #-imm]`
   - Almacenamiento (*store*): `mov [rbp - imm], reg` → `str reg, [x29, #-imm]`
-- **Direccionamiento complejo fuera de alcance:** Formas con escalado, índice o direccionamiento relativo al puntero de instrucción (ej. `[rax + rbx*4 + 8]`, `[rip + etiqueta]`, `[base + index*scale + disp]`) son rechazadas en validación con diagnóstico tipificado `E014`. Tampoco se admite transferencia directa memoria a memoria (`mov mem, mem`) ni almacenar inmediatos directamente en memoria (`mov mem, imm`).
+- **Direccionamiento complejo fuera de alcance:** Formas con escalado, índice o direccionamiento relativo al puntero de instrucción (ej. `[rax + rbx*4 + 8]`, `[rip + etiqueta]`, `[base + index*scale + disp]`) se rechazan en parseo con `E030`. Las formas completas que el subconjunto no admite, como `mov mem, mem` o `mov mem, imm`, se rechazan en validación con `E014`.
+- Un desplazamiento exige un único operador `+` o `-`, unido al número o separado por espacios. Se rechazan `[rbp 8]`, `[rbp - -8]`, corchetes incompletos y desplazamientos fuera de `int64_t`.
 
 ---
 
 ## 6. Directivas de Ensamblador
 
-- Las directivas de ensamblador tradicionales (como `global`, `section .text`, `default rel`, etc.) se ignoran de forma segura durante la normalización inicial si no contienen código ejecutable, permitiendo enfocarse en las instrucciones funcionales.
+- Las directivas de ensamblador tradicionales (como `global`, `section .text`, `default rel`, etc.) todavía no están implementadas. Se rechazan como instrucciones no soportadas (`E001`); no se ignoran durante la normalización.
 
 ---
 
@@ -74,3 +78,5 @@ Queda explícitamente fuera de soporte:
 - **Sintaxis AT&T:** (ej. `movq $10, %rax` o `addq %rbx, %rax`).
 - **Instrucciones con más de dos operandos** en x86-64.
 - **Prefijos de segmento o bloqueos de bus:** (`lock`, `fs:`, `gs:`).
+
+La normalización conserva las comas vacías o sobrantes para que el parser las rechace. Los errores de sintaxis producen `E030`, y los inmediatos incompletos o desbordados producen `E024`. Se conserva la línea original, y un programa rechazado no genera salida AArch64 parcial.

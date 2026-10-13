@@ -1,5 +1,6 @@
 #include "instruccion.hpp"
 #include <cctype>
+#include <stdexcept>
 
 std::string codigoOperacionATexto(CodigoOperacion codigo) {
     switch (codigo) {
@@ -136,7 +137,7 @@ std::string OperandoMemoria::aTexto() const {
     if (desplazamiento > 0) {
         return "[" + registroBase + " + " + std::to_string(desplazamiento) + "]";
     }
-    return "[" + registroBase + " - " + std::to_string(-desplazamiento) + "]";
+    return "[" + registroBase + " - " + std::to_string(desplazamiento).substr(1) + "]";
 }
 
 Operando::Operando()
@@ -172,13 +173,38 @@ Operando Operando::crearRegistro(const std::string& nombreRegistro) {
 }
 
 Operando Operando::crearInmediato(const std::string& valorInmediato) {
-    int64_t num = 0;
-    try {
-        num = std::stoll(valorInmediato, nullptr, 0);
-    } catch (...) {
-        num = 0;
+    size_t inicioDigitos = 0;
+    if (!valorInmediato.empty() && (valorInmediato[0] == '+' || valorInmediato[0] == '-')) {
+        inicioDigitos = 1;
     }
-    return Operando(TipoOperando::Inmediato, valorInmediato, num);
+
+    int base = 10;
+    std::string digitosPermitidos = "0123456789";
+    if (valorInmediato.size() >= inicioDigitos + 2 &&
+        valorInmediato[inicioDigitos] == '0' &&
+        (valorInmediato[inicioDigitos + 1] == 'x' || valorInmediato[inicioDigitos + 1] == 'X')) {
+        base = 16;
+        inicioDigitos += 2;
+        digitosPermitidos = "0123456789abcdefABCDEF";
+    }
+
+    if (inicioDigitos >= valorInmediato.size() ||
+        valorInmediato.find_first_not_of(digitosPermitidos, inicioDigitos) != std::string::npos) {
+        return Operando(TipoOperando::Desconocido, valorInmediato);
+    }
+
+    try {
+        size_t caracteresLeidos = 0;
+        int64_t num = std::stoll(valorInmediato, &caracteresLeidos, base);
+        if (caracteresLeidos == valorInmediato.size()) {
+            return Operando(TipoOperando::Inmediato, valorInmediato, num);
+        }
+    } catch (const std::invalid_argument&) {
+        return Operando(TipoOperando::Desconocido, valorInmediato);
+    } catch (const std::out_of_range&) {
+        return Operando(TipoOperando::Desconocido, valorInmediato);
+    }
+    return Operando(TipoOperando::Desconocido, valorInmediato);
 }
 
 Operando Operando::crearInmediato(int64_t valorNum) {

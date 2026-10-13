@@ -258,6 +258,29 @@ void probarEjecucionCLI() {
         archOut.close();
     }
 
+    // Un error de parseo no debe emitir codigo ni sobrescribir un archivo de salida.
+    {
+        std::ofstream archIn(rutaTempEntrada);
+        archIn << "; cabecera\n\nadd rax,,5\n";
+        archIn.close();
+        std::ofstream archOut(rutaTempSalida);
+        archOut << "contenido anterior\n";
+        archOut.close();
+
+        OpcionesCLI opc;
+        opc.archivoEntrada = rutaTempEntrada;
+        opc.archivoSalida = rutaTempSalida;
+        std::stringstream ssOut, ssErr;
+        assert(AnalizadorCLI::ejecutar(opc, ssOut, ssErr) == 1);
+        assert(ssOut.str().empty());
+        assert(ssErr.str().find("linea 3: [E030]") != std::string::npos);
+
+        std::ifstream archivoPreservado(rutaTempSalida);
+        std::stringstream contenidoPreservado;
+        contenidoPreservado << archivoPreservado.rdbuf();
+        assert(contenidoPreservado.str() == "contenido anterior\n");
+    }
+
     // Limpieza de archivos temporales
     std::remove(rutaTempEntrada.c_str());
     std::remove(rutaTempSalida.c_str());

@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cassert>
 #include "analizador_sintactico.hpp"
+#include "traductor.hpp"
+#include <limits>
 
 void probarAnalisisInstruccionesBasicas() {
     std::cout << "[Test] Probando analisis de instrucciones basicas (mov, add, sub, ret)...\n";
@@ -179,6 +181,76 @@ void probarAnalisisLlamadas() {
     std::cout << "  -> Exito en analisis de call.\n";
 }
 
+void probarRechazoSintaxisMalformada() {
+    const std::vector<std::string> casos = {
+        "add rax 5", "add ,rax, 5", "add rax,,5", "add rax, 5,",
+        "add rax,", "ret ,", "ret , ,", "push ,rax", "mov,rax,1",
+        "mov[rbp],rax", "mov rax, [rbp 8]", "mov rax, [rbp - -8]",
+        "mov rax, [rbp + +8]", "mov rax, [rbp +]", "mov rax, [rbp - 8",
+        "mov rax, [rbp - 8]]", "mov rax, [rbp, 8]", "mov rax, []",
+        "mov rax, [rbp + rax*4]", "mov rax, 12abc", "mov rax, 0x1g",
+        "9inicio: ret", "call destino,\ndestino:\nret"
+    };
+
+    for (const auto& texto : casos) {
+        ResultadoTraduccion resultado = Traductor::traducir("; cabecera\n\n" + texto + "\n");
+        assert(!resultado.esExitoso());
+        assert(resultado.codigoGenerado.empty());
+        assert(resultado.irDestino.empty());
+        assert(resultado.mapeos.empty());
+        assert(!resultado.diagnosticos.empty());
+        assert(resultado.diagnosticos[0].codigo == CodigosDiagnostico::kSintaxisInvalida);
+        assert(resultado.diagnosticos[0].numeroLinea == 3);
+    }
+}
+
+void probarLimitesNumericosYConsumoCompleto() {
+    const std::vector<std::string> invalidos = {
+        "0x", "+0x", "-0x", "9223372036854775808",
+        "-9223372036854775809", "0x8000000000000000"
+    };
+    for (const auto& literal : invalidos) {
+        assert(!Operando::crearInmediato(literal).esInmediato());
+        ResultadoTraduccion resultado = Traductor::traducir("mov rax, " + literal);
+        assert(!resultado.esExitoso());
+        assert(resultado.codigoGenerado.empty());
+        assert(resultado.diagnosticos[0].codigo == CodigosDiagnostico::kInmediatoInvalido);
+    }
+
+    const std::vector<std::string> operandosInvalidos = {
+        "rax rbx", "10 basura", "0x1g", "12abc", "[rbp] basura", "[rbp 8]",
+        "[rbp - 9223372036854775809]", "[rbp+0x8000000000000000]"
+    };
+    for (const auto& texto : operandosInvalidos) {
+        assert(AnalizadorSintactico::clasificarOperando(texto).tipo == TipoOperando::Desconocido);
+    }
+
+    assert(Operando::crearInmediato("010").valorNumerico == 10);
+    assert(Operando::crearInmediato("08").valorNumerico == 8);
+    assert(Operando::crearInmediato("-0x8000000000000000").valorNumerico == std::numeric_limits<int64_t>::min());
+    assert(Operando::crearInmediato("9223372036854775807").valorNumerico == std::numeric_limits<int64_t>::max());
+    Operando minimo = AnalizadorSintactico::clasificarOperando("[rbp - 9223372036854775808]");
+    assert(minimo.esMemoria());
+    assert(minimo.memoria.desplazamiento == std::numeric_limits<int64_t>::min());
+    assert(minimo.memoria.aTexto() == "[rbp - 9223372036854775808]");
+
+    for (const auto& texto : {"[RBP-08]", "[rbp - 8]", "[rbp- 8]", "[rbp -8]"}) {
+        Operando memoria = AnalizadorSintactico::clasificarOperando(texto);
+        assert(memoria.esMemoria());
+        assert(memoria.memoria.registroBase == "rbp");
+        assert(memoria.memoria.desplazamiento == -8);
+    }
+
+    const std::vector<std::string> desplazamientosInvalidos = {
+        "[rbp - 9223372036854775809]", "[rbp+0x8000000000000000]"
+    };
+    for (const auto& memoria : desplazamientosInvalidos) {
+        ResultadoTraduccion resultado = Traductor::traducir("mov rax, " + memoria);
+        assert(!resultado.esExitoso());
+        assert(resultado.codigoGenerado.empty());
+    }
+}
+
 int main() {
     std::cout << "=== Pruebas unitarias de AnalizadorSintactico ===\n";
     probarAnalisisInstruccionesBasicas();
@@ -187,6 +259,8 @@ int main() {
     probarAnalisisOperandosMemoria();
     probarAnalisisStack();
     probarAnalisisLlamadas();
+    probarRechazoSintaxisMalformada();
+    probarLimitesNumericosYConsumoCompleto();
     std::cout << "Todas las pruebas del analizador sintactico pasaron con exito.\n";
     return 0;
 }

@@ -16,6 +16,7 @@
  * - Identificar operandos (registros, inmediatos, etiquetas).
  * - Procesar etiquetas en su propia línea o precediendo instrucciones.
  * - Construir instancias de Instruccion listas para validación y traducción.
+ * - Conservar el primer error sintactico en Instruccion::errorSintactico.
  */
 class AnalizadorSintactico {
 public:
@@ -51,7 +52,7 @@ public:
     /**
      * @brief Clasifica un texto de operando individual (registro, inmediato o etiqueta).
      * @param textoOperando Texto del operando sin espacios sobrantes.
-     * @return Estructura Operando con su tipo y valor detectados.
+     * @return Operando completo, o Desconocido si hay errores o tokens sobrantes.
      */
     static Operando clasificarOperando(const std::string& textoOperando);
 

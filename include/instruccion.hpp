@@ -5,6 +5,8 @@
 #include <vector>
 #include <iostream>
 #include <cstdint>
+#include <optional>
+#include "diagnostico.hpp"
 
 /**
  * @brief Códigos de operación x86-64 soportados inicialmente.
@@ -97,6 +99,7 @@ struct Operando {
 
     // Métodos auxiliares para crear operandos de forma clara
     static Operando crearRegistro(const std::string& nombreRegistro);
+    // Devuelve Desconocido si el literal no es decimal/hexadecimal o excede int64_t.
     static Operando crearInmediato(const std::string& valorInmediato);
     static Operando crearInmediato(int64_t valorNum);
     static Operando crearEtiqueta(const std::string& nombreEtiqueta);
@@ -115,6 +118,7 @@ struct Instruccion {
     std::vector<Operando> operandos;
     int numeroLinea;
     std::string etiqueta; // Nombre de etiqueta asociada o definida en esta linea
+    std::optional<Diagnostico> errorSintactico; // Primer error de parseo de esta linea
 
     // Constructor con código de operación y número de línea
     Instruccion(CodigoOperacion codigo, int linea = 1);

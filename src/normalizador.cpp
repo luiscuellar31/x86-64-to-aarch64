@@ -84,18 +84,21 @@ static std::string normalizarInstruccion(const std::string& textoInstruccion) {
 
     while (std::getline(flujoOperandos, operandoItem, ',')) {
         std::string operandoRecortado = recortarEspacios(operandoItem);
-        if (!operandoRecortado.empty()) {
-            if (esRegistroX86(operandoRecortado)) {
-                // Los registros se normalizan a minusculas
-                listaOperandos.push_back(normalizarNombreRegistro(operandoRecortado));
-            } else if (esInmediatoNumerico(operandoRecortado)) {
-                // Los inmediatos numericos se pasan a minusculas (ej. 0x1F -> 0x1f)
-                listaOperandos.push_back(aMinusculas(operandoRecortado));
-            } else {
-                // Identificadores de etiquetas conservan su case exacto
-                listaOperandos.push_back(operandoRecortado);
-            }
+        if (esRegistroX86(operandoRecortado)) {
+            // Los registros se normalizan a minusculas
+            listaOperandos.push_back(normalizarNombreRegistro(operandoRecortado));
+        } else if (esInmediatoNumerico(operandoRecortado)) {
+            // Los inmediatos numericos se pasan a minusculas (ej. 0x1F -> 0x1f)
+            listaOperandos.push_back(aMinusculas(operandoRecortado));
+        } else {
+            // Conservar etiquetas y campos vacios para que el parser valide las comas.
+            listaOperandos.push_back(operandoRecortado);
         }
+    }
+
+    // getline no devuelve el campo vacio posterior a una coma final.
+    if (restoOperandos.back() == ',') {
+        listaOperandos.push_back("");
     }
 
     // Ensamblamos la instruccion con formato estandar: mnemonico op1, op2

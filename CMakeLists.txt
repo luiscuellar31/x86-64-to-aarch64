@@ -88,3 +88,16 @@ add_executable(test_cli tests/test_cli.cpp)
 target_link_libraries(test_cli PRIVATE traductor_nucleo)
 add_test(NAME TestCLI COMMAND test_cli)
 
+# Las comprobaciones con assert deben ejecutarse tambien en Release.
+foreach(objetivoPrueba IN ITEMS
+    test_normalizador test_analizador_lexico test_analizador_sintactico
+    test_ir test_diagnostico test_resultado_traduccion test_validador
+    test_traductor test_cli
+)
+    if(MSVC)
+        target_compile_options(${objetivoPrueba} PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(${objetivoPrueba} PRIVATE -UNDEBUG)
+    endif()
+endforeach()
+

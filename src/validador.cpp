@@ -5,6 +5,11 @@
 bool Validador::validarInstruccion(const Instruccion& instruccion, GestorDiagnosticos& gestor) {
     int linea = instruccion.numeroLinea;
 
+    if (instruccion.errorSintactico.has_value()) {
+        gestor.agregar(*instruccion.errorSintactico);
+        return false;
+    }
+
     // 1. Validar definiciones de etiqueta pura (ej. "inicio:")
     if (instruccion.esEtiquetaPura()) {
         if (instruccion.cantidadOperandos() > 0) {
