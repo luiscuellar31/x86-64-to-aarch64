@@ -11,6 +11,7 @@ El estado «Soportado» registra formas reconocidas y reglas de emisión impleme
 En las etapas V0 y V1, el traductor opera **únicamente con registros y operaciones enteras de 64 bits**.
 - **Soportados:** `rax`, `rbx`, `rcx`, `rdx`, `rsi`, `rdi`, `rbp`, `rsp`, `r8` a `r15`.
 - **Excluidos inicialmente:** Subregistros de 32, 16 y 8 bits (`eax`, `ax`, `al`, `ah`, etc.) para evitar complejidad prematura con extensión de ceros (*zero-extension*) y escrituras parciales.
+- `rsp` tiene un uso específico como stack pointer: las restricciones por forma se describen en [SINTAXIS_ENTRADA.md](SINTAXIS_ENTRADA.md#8-uso-limitado-de-rsp). La presencia de un registro en la lista no implica que sea válido en cualquier posición.
 
 ---
 
@@ -19,7 +20,7 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 | Instrucción x86-64 | Forma | Estado | Afecta Flags x86 | Equivalente AArch64 | Notas y Explicación Didáctica |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `mov` | `reg, reg` | Soportado (V0) | No | `mov xD, xS` | Copia directa de registro a registro de 64 bits. |
-| `mov` | `reg, imm` | Soportado (V0) | No | `mov xD, #imm` | Carga de constante inmediata en registro. |
+| `mov` | `reg, imm` | Soportado (V0) | No | `mov xD, #imm` | Carga de constante inmediata en registro; destino distinto de `rsp`. |
 | `mov` | `reg, [rbp - imm]` | Soportado (M3.3) | No | `ldr xD, [x29, #-imm]` | Carga desde memoria local del stack (`ldr`) con base `x29`. |
 | `mov` | `[rbp - imm], reg` | Soportado (M3.3) | No | `str xS, [x29, #-imm]` | Almacenamiento en memoria local del stack (`str`) con base `x29`. En AArch64 `str`, el registro fuente va primero. |
 | `add` | `reg, reg` | Soportado (V0) | Sí | `add xD, xD, xS` | x86 usa destino destructivo de 2 operandos; AArch64 expresa 3 operandos (`destino, fuente1, fuente2`). |
@@ -42,8 +43,8 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 | `jg` | `etiqueta` | Soportado (M3.2) | No | `b.gt etiqueta` | Salto condicional si mayor con signo (`ZF = 0` y `SF == OF`). |
 | `jge` | `etiqueta` | Soportado (M3.2) | No | `b.ge etiqueta` | Salto condicional si mayor o igual con signo (`SF == OF`). |
 | `call` | `etiqueta` | Soportado (M3.5) | No | `str x30, [sp, #-16]!; bl etiqueta; ldr x30, [sp], #16` | Preserva el enlace del llamante en un bloque temporal de 16 bytes. Sólo llamadas internas con stack restablecido al retornar. |
-| `push` | `reg` | Soportado (M3.4) | No | `str xReg, [sp, #-16]!` | Almacenamiento con pre-indexado en pila preservando alineación de 16 bytes. |
-| `pop` | `reg` | Soportado (M3.4) | No | `ldr xReg, [sp], #16` | Carga con post-indexado desde pila restaurando alineación de 16 bytes. |
+| `push` | `reg` | Soportado (M3.4) | No | `str xReg, [sp, #-16]!` | Registro distinto de `rsp`; almacenamiento con pre-indexado preservando alineación de 16 bytes. |
+| `pop` | `reg` | Soportado (M3.4) | No | `ldr xReg, [sp], #16` | Registro distinto de `rsp`; carga con post-indexado restaurando el puntero de pila. |
 | `ret` | *(sin operandos)* | Soportado (V0) | No | `ret` | Retorno de subrutina (en AArch64 salta a la dirección en `x30`/`lr`). |
 
 ---

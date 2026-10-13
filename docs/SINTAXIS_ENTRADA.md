@@ -81,3 +81,15 @@ Queda explícitamente fuera de soporte:
 - **Prefijos de segmento o bloqueos de bus:** (`lock`, `fs:`, `gs:`).
 
 La normalización conserva las comas vacías o sobrantes para que el parser las rechace. Los errores de sintaxis producen `E030`, y los inmediatos incompletos o desbordados producen `E024`. Se conserva la línea original, y un programa rechazado no genera salida AArch64 parcial.
+
+## 8. Uso limitado de rsp
+
+`rsp` representa el stack pointer `sp` del destino. La validación acepta las formas que la emisión actual puede representar:
+
+- `mov reg, rsp` y `mov rsp, reg`, incluidos los movimientos de prólogo y epílogo.
+- `add rsp, reg/imm`, `sub rsp, reg/imm` y `cmp rsp, reg/imm`, con registro fuente distinto de `rsp`.
+- `rsp` como base de memoria local de 64 bits.
+
+Se rechazan con `E014`: `push rsp`, `pop rsp`, `mov rsp, imm`, cargar memoria directamente a `rsp`, almacenar `rsp` directamente en memoria y usarlo como fuente de aritmética, lógica o comparación. Las operaciones lógicas tampoco admiten `rsp` como destino.
+
+Estos controles verifican la forma de los operandos. Todavía no comprueban la codificación de todos los inmediatos y desplazamientos, la alineación y balance del stack de un programa completo ni las dependencias de flags entre instrucciones.

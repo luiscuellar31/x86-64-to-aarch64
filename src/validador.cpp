@@ -17,6 +17,10 @@ static bool validarRegistro64(const std::string& nombreRegistro, const std::stri
     return true;
 }
 
+static bool esRegistroRsp(const Operando& operando) {
+    return operando.esRegistro() && normalizarNombreRegistro(operando.valor) == "rsp";
+}
+
 static bool validarMemoriaLocal(const OperandoMemoria& memoria, int numeroLinea, GestorDiagnosticos& gestor) {
     if (esSubregistroX86(memoria.registroBase)) {
         gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, numeroLinea,
@@ -105,6 +109,11 @@ static bool validarStack(const Instruccion& instruccion, GestorDiagnosticos& ges
         return false;
     }
     if (operando.esRegistro()) {
+        if (esRegistroRsp(operando)) {
+            gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, numeroLinea,
+                                "la instruccion '" + mnemonico + "' no admite rsp como registro de datos");
+            return false;
+        }
         return validarRegistro64(operando.valor, "el registro", numeroLinea, gestor);
     }
     if (esSubregistroX86(operando.valor)) {
@@ -170,6 +179,22 @@ static bool validarFuenteMovimiento(const Operando& fuente, const Operando& dest
     return false;
 }
 
+static bool validarFormaMovimientoConRsp(const Instruccion& instruccion, GestorDiagnosticos& gestor) {
+    const Operando& destino = instruccion.operando(0);
+    const Operando& fuente = instruccion.operando(1);
+    if (esRegistroRsp(destino) && !fuente.esRegistro()) {
+        gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, instruccion.numeroLinea,
+                            "mov a rsp solo admite un registro como fuente");
+        return false;
+    }
+    if (destino.esMemoria() && esRegistroRsp(fuente)) {
+        gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, instruccion.numeroLinea,
+                            "no se admite almacenar rsp directamente en memoria");
+        return false;
+    }
+    return true;
+}
+
 static bool validarMovimiento(const Instruccion& instruccion, GestorDiagnosticos& gestor) {
     if (instruccion.cantidadOperandos() < 2) {
         gestor.agregarError(CodigosDiagnostico::kFaltanOperandos, instruccion.numeroLinea,
@@ -187,7 +212,35 @@ static bool validarMovimiento(const Instruccion& instruccion, GestorDiagnosticos
     if (!validarDestinoMovimiento(destino, instruccion.numeroLinea, gestor)) {
         return false;
     }
-    return validarFuenteMovimiento(fuente, destino, instruccion.numeroLinea, gestor);
+    if (!validarFuenteMovimiento(fuente, destino, instruccion.numeroLinea, gestor)) {
+        return false;
+    }
+    return validarFormaMovimientoConRsp(instruccion, gestor);
+}
+
+static bool validarFormaBinariaConRsp(const Instruccion& instruccion, GestorDiagnosticos& gestor) {
+    const Operando& destino = instruccion.operando(0);
+    const Operando& fuente = instruccion.operando(1);
+    std::string mnemonico = codigoOperacionATexto(instruccion.codigoOperacion);
+    if (esRegistroRsp(fuente)) {
+        gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, instruccion.numeroLinea,
+                            "la instruccion '" + mnemonico + "' no admite rsp como registro fuente");
+        return false;
+    }
+    switch (instruccion.codigoOperacion) {
+        case CodigoOperacion::And:
+        case CodigoOperacion::Or:
+        case CodigoOperacion::Xor:
+            if (esRegistroRsp(destino)) {
+                gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, instruccion.numeroLinea,
+                                    "la instruccion '" + mnemonico + "' no admite rsp como registro destino");
+                return false;
+            }
+            break;
+        default:
+            break;
+    }
+    return true;
 }
 
 static bool validarOperacionConDestinoRegistro(const Instruccion& instruccion, GestorDiagnosticos& gestor) {
@@ -230,10 +283,13 @@ static bool validarOperacionConDestinoRegistro(const Instruccion& instruccion, G
         return false;
     }
     if (fuente.esRegistro()) {
-        return validarRegistro64(fuente.valor, "el registro fuente", numeroLinea, gestor);
+        if (!validarRegistro64(fuente.valor, "el registro fuente", numeroLinea, gestor)) {
+            return false;
+        }
+        return validarFormaBinariaConRsp(instruccion, gestor);
     }
     if (fuente.esInmediato()) {
-        return true;
+        return validarFormaBinariaConRsp(instruccion, gestor);
     }
     if (esSubregistroX86(fuente.valor)) {
         gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, numeroLinea,

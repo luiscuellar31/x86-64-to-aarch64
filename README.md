@@ -42,7 +42,7 @@ El núcleo del traductor se encuentra desacoplado como la biblioteca estática `
 
 El último milestone implementado es **3.6 (CLI estable)**. La consolidación de **7.1 (pruebas de parsing)** exige separadores y operandos completos y rechaza literales fuera de `int64_t`. Las llamadas internas del milestone 3.5 preservan el enlace de retorno. Todavía existen bloqueos semánticos en flags, stack y codificación de operandos antes de iniciar la GUI; el ensamblado de los ejemplos no acredita equivalencia funcional.
 
-Las pruebas de formas de operandos de **7.2 (validación)** comprueban registros de 64 bits, memoria local con base `rbp`/`rsp` y ancho de 64 bits. Las restricciones se detallan en [SINTAXIS_ENTRADA.md](docs/SINTAXIS_ENTRADA.md).
+Las pruebas de formas de operandos de **7.2 (validación)** comprueban registros de 64 bits, memoria local con base `rbp`/`rsp`, ancho de 64 bits y usos permitidos de `rsp`. Las restricciones se detallan en [SINTAXIS_ENTRADA.md](docs/SINTAXIS_ENTRADA.md).
 
 ### Capacidades implementadas
 - **Modelo de datos semántico:** Soporte de operandos tipados (registros, inmediatos numéricos de 64 bits, etiquetas y memoria local estructurada con base y desplazamiento).

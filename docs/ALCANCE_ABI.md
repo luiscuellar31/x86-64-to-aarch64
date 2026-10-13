@@ -33,6 +33,8 @@ Para preservar deterministamente la alineación a 16 bytes de la ABI sin depende
    ```
    (Carga con post-indexado y actualización de `sp`, liberando el bloque de 16 bytes y restaurando el puntero alineado).
 
+En estas dos reglas, `reg` debe ser un registro general de 64 bits distinto de `rsp`. El stack pointer puede actuar como base de memoria, pero la emisión actual no puede almacenarlo o cargarlo directamente como valor mediante `str`/`ldr`; `push rsp` y `pop rsp` se rechazan con `E014`.
+
 ### Prólogo y epílogo estándar con Frame Pointer
 La secuencia canónica de establecimiento y liberación de marco de pila:
 ```asm

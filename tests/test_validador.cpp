@@ -367,6 +367,30 @@ void probarBasesDeMemoriaFueraDelSubconjunto() {
     }
 }
 
+void probarUsoDeRspComoDato() {
+    const std::vector<std::string> casos = {
+        "push rsp", "pop rsp", "PUSH RSP", "mov rsp, 42",
+        "mov rsp, [rbp]", "mov [rsp], rsp", "and rsp, rax",
+        "or rsp, 1", "xor rsp, rax", "and rax, rsp",
+        "or rax, rsp", "xor rax, rsp", "add rax, rsp",
+        "sub rbp, rsp", "cmp rdi, rsp"
+    };
+    for (const auto& texto : casos) {
+        Instruccion instruccion = AnalizadorSintactico::analizarTexto(texto, 3);
+        assert(!instruccion.errorSintactico.has_value());
+        GestorDiagnosticos gestor;
+        assert(!Validador::validarInstruccion(instruccion, gestor));
+        assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+        assert(gestor.obtenerTodos()[0].numeroLinea == 3);
+
+        ResultadoTraduccion resultado = Traductor::traducir("; cabecera\n\n" + texto);
+        assert(!resultado.esExitoso());
+        assert(resultado.codigoGenerado.empty());
+        assert(resultado.irDestino.empty());
+        assert(resultado.mapeos.empty());
+    }
+}
+
 void probarAnchoDeMemoriaEnLaBiblioteca() {
     for (int anchoBits : {8, 16, 32, 128}) {
         for (const auto& base : {"rbp", "rsp"}) {
@@ -390,6 +414,21 @@ void probarAnchoDeMemoriaEnLaBiblioteca() {
         {Operando::crearRegistro("rax"), Operando::crearMemoria("RBP", -8, 64)}, 7);
     GestorDiagnosticos gestor;
     assert(Validador::validarInstruccion(carga, gestor));
+}
+
+void probarFormasPermitidasConRsp() {
+    const std::vector<std::string> casos = {
+        "mov rbp, rsp", "mov rsp, rbp", "mov rax, rsp", "mov rsp, rax",
+        "mov rsp, rsp", "add rsp, rax", "sub rsp, rax",
+        "add rsp, 16", "sub rsp, 16", "cmp rsp, rax", "cmp rsp, 16",
+        "mov rax, [rsp]", "mov [rsp], rax", "mov rax, [rbp + 16]"
+    };
+    for (const auto& texto : casos) {
+        GestorDiagnosticos gestor;
+        Instruccion instruccion = AnalizadorSintactico::analizarTexto(texto, 1);
+        assert(Validador::validarInstruccion(instruccion, gestor));
+        assert(!gestor.tieneErrores());
+    }
 }
 
 void probarSubregistrosEnLasFormasSoportadas() {
@@ -423,7 +462,9 @@ int main() {
     probarInstruccionesStack();
     probarValidacionLlamadas();
     probarBasesDeMemoriaFueraDelSubconjunto();
+    probarUsoDeRspComoDato();
     probarAnchoDeMemoriaEnLaBiblioteca();
+    probarFormasPermitidasConRsp();
     probarSubregistrosEnLasFormasSoportadas();
     std::cout << "Todas las condiciones Gate del validador pasaron con exito.\n";
     return 0;
