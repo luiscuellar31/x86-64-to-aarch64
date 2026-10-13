@@ -125,6 +125,10 @@ Las pruebas de traducción comparan la salida AArch64 completa con textos espera
 
 Las pruebas de rechazo cubren AVX, SSE, x87, sintaxis AT&T, tamaños no soportados, direccionamientos complejos, mnemónicos desconocidos y formas de llamada excluidas. Comprueban el código y la línea del diagnóstico, la ausencia de salida parcial y la conservación de un archivo de salida previo al procesar el corpus inválido desde la CLI.
 
+Si el compilador configurado es Clang con interfaz GNU y backend AArch64 disponible, CTest traduce y ensambla cada archivo `.s` de `examples/validos/` para `aarch64-unknown-linux-gnu`. Cada ejemplo tiene una prueba independiente con tiempo límite, que falla ante errores de traducción o del ensamblador. Se generan archivos objeto sin enlazar ni ejecutar código; no hacen falta bibliotecas del destino. CMake informa si estas pruebas no pueden registrarse con el compilador disponible.
+
+El ensamblado comprueba la sintaxis y codificación de los ejemplos del corpus. El núcleo todavía puede aceptar otros operandos no codificables, y estas pruebas no demuestran equivalencia funcional general.
+
 En macOS arm64 se añade una prueba nativa de retornos sucesivos y llamadas anidadas, con tiempo límite. Usa el compilador configurado y el ejemplo `09_llamadas_anidadas.s`; no requiere emulador ni dependencias nuevas.
 
 ### Uso de la herramienta CLI

@@ -91,6 +91,47 @@ target_compile_definitions(test_cli PRIVATE
 )
 add_test(NAME TestCLI COMMAND test_cli)
 
+# Comprobar el corpus en AArch64 sin depender de la arquitectura del host.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND
+   NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    set(destinoEnsamblado "aarch64-unknown-linux-gnu")
+    set(carpetaComprobacion "${CMAKE_CURRENT_BINARY_DIR}/comprobar_ensamblador_aarch64")
+    file(MAKE_DIRECTORY "${carpetaComprobacion}")
+    file(WRITE "${carpetaComprobacion}/entrada.s" "    mov x0, #1\n    ret\n")
+    execute_process(
+        COMMAND "${CMAKE_CXX_COMPILER}" -fintegrated-as -target "${destinoEnsamblado}"
+            -c "${carpetaComprobacion}/entrada.s" -o "${carpetaComprobacion}/entrada.o"
+        RESULT_VARIABLE resultadoComprobacion
+        ERROR_VARIABLE errorComprobacion
+        TIMEOUT 5
+    )
+
+    if(resultadoComprobacion STREQUAL "0")
+        file(GLOB ejemplosValidos CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/examples/validos/*.s")
+        if(NOT ejemplosValidos)
+            message(FATAL_ERROR "No se encontraron ejemplos para comprobar el ensamblado AArch64.")
+        endif()
+        foreach(archivoEjemplo IN LISTS ejemplosValidos)
+            get_filename_component(nombreEjemplo "${archivoEjemplo}" NAME_WE)
+            set(nombrePrueba "TestEnsamblado_${nombreEjemplo}")
+            add_test(NAME "${nombrePrueba}" COMMAND ${CMAKE_COMMAND}
+                "-DTRADUCTOR=$<TARGET_FILE:x86_64_to_aarch64>"
+                "-DENTRADA=${archivoEjemplo}"
+                "-DCOMPILADOR=${CMAKE_CXX_COMPILER}"
+                "-DDESTINO=${destinoEnsamblado}"
+                "-DCARPETA_PRUEBA=${CMAKE_CURRENT_BINARY_DIR}/pruebas_ensamblado/${nombreEjemplo}"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/verificar_ensamblado_aarch64.cmake"
+            )
+            set_tests_properties("${nombrePrueba}" PROPERTIES TIMEOUT 15)
+        endforeach()
+        message(STATUS "Pruebas de ensamblado AArch64 disponibles para el corpus válido.")
+    else()
+        message(STATUS "Ensamblado AArch64 no disponible en el compilador configurado: ${errorComprobacion}")
+    endif()
+else()
+    message(STATUS "Las pruebas de ensamblado AArch64 requieren Clang con interfaz de línea de comandos GNU.")
+endif()
+
 # Ejecutar el ensamblador traducido en el host soportado, con un tiempo limite.
 if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$" AND NOT CMAKE_CROSSCOMPILING)
     add_test(NAME TestLlamadasNativas COMMAND ${CMAKE_COMMAND}
