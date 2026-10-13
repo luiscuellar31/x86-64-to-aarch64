@@ -288,18 +288,130 @@ void probarTraduccionLlamadas() {
     assert(res.codigoGenerado.find("ret") != std::string::npos);
     assert(res.codigoGenerado.find("duplicar:") != std::string::npos);
 
+    assert(res.codigoGenerado ==
+        "inicio:\n"
+        "    mov x1, #10\n"
+        "    str x30, [sp, #-16]!\n"
+        "    bl duplicar\n"
+        "    ldr x30, [sp], #16\n"
+        "    ret\n"
+        "duplicar:\n"
+        "    add x1, x1, x1\n"
+        "    mov x0, x1\n"
+        "    ret\n");
+
     // Verificamos la regla pedagogica
     bool tieneCallDirect = false;
     for (const auto& mapeo : res.mapeos) {
         if (mapeo.reglaId == "CALL_DIRECT") {
             tieneCallDirect = true;
             assert(mapeo.codigoOrigen == "call duplicar");
-            assert(mapeo.codigoDestino == "bl duplicar");
+            assert(mapeo.codigoDestino == "str x30, [sp, #-16]!\nbl duplicar\nldr x30, [sp], #16");
+            assert(mapeo.lineasDestinoAArch64 == std::vector<int>({3, 4, 5}));
         }
     }
     assert(tieneCallDirect);
 
     std::cout << "  -> Exito en traduccion de llamadas a funcion (call -> bl).\n";
+}
+
+void probarLlamadasSucesivasYAnidadas() {
+    std::string codigo =
+        "inicio:\n"
+        "mov rax, 7\n"
+        "call duplicar\n"
+        "call incrementar\n"
+        "ret\n"
+        "duplicar:\n"
+        "push rbp\n"
+        "mov rbp, rsp\n"
+        "call doblar\n"
+        "mov rsp, rbp\n"
+        "pop rbp\n"
+        "ret\n"
+        "doblar: add rax, rax\n"
+        "ret\n"
+        "incrementar: add rax, 1\n"
+        "ret\n";
+
+    ResultadoTraduccion resultado = Traductor::traducir(codigo);
+    assert(resultado.esExitoso());
+    assert(resultado.codigoGenerado ==
+        "inicio:\n"
+        "    mov x0, #7\n"
+        "    str x30, [sp, #-16]!\n"
+        "    bl duplicar\n"
+        "    ldr x30, [sp], #16\n"
+        "    str x30, [sp, #-16]!\n"
+        "    bl incrementar\n"
+        "    ldr x30, [sp], #16\n"
+        "    ret\n"
+        "duplicar:\n"
+        "    str x29, [sp, #-16]!\n"
+        "    mov x29, sp\n"
+        "    str x30, [sp, #-16]!\n"
+        "    bl doblar\n"
+        "    ldr x30, [sp], #16\n"
+        "    mov sp, x29\n"
+        "    ldr x29, [sp], #16\n"
+        "    ret\n"
+        "    doblar: add x0, x0, x0\n"
+        "    ret\n"
+        "    incrementar: add x0, x0, #1\n"
+        "    ret\n");
+
+    assert(resultado.mapeos.size() == 16);
+    assert(resultado.irDestino.size() == 22);
+    assert(resultado.mapeos[2].lineasDestinoAArch64 == std::vector<int>({3, 4, 5}));
+    assert(resultado.mapeos[3].lineasDestinoAArch64 == std::vector<int>({6, 7, 8}));
+    assert(resultado.mapeos[8].lineasDestinoAArch64 == std::vector<int>({13, 14, 15}));
+    assert(resultado.mapeos[12].codigoOrigen == "doblar: add rax, rax");
+    assert(resultado.mapeos[12].codigoDestino == "doblar: add x0, x0, x0");
+
+    for (size_t indice : {2, 5, 12}) {
+        int lineaOrigen = resultado.irDestino[indice].lineaOrigen;
+        for (size_t desplazamiento = 0; desplazamiento < 3; desplazamiento++) {
+            assert(resultado.irDestino[indice + desplazamiento].lineaOrigen == lineaOrigen);
+            assert(resultado.irDestino[indice + desplazamiento].reglaId == "CALL_DIRECT");
+            assert(!resultado.irDestino[indice + desplazamiento].explicacion.empty());
+        }
+    }
+
+    ResultadoTraduccion hoja = Traductor::traducir("mov rax, 42\nret\n");
+    assert(hoja.codigoGenerado == "    mov x0, #42\n    ret\n");
+    ResultadoTraduccion rechazada = Traductor::traducir("call ausente\nret\n");
+    assert(!rechazada.esExitoso());
+    assert(rechazada.codigoGenerado.empty());
+    assert(rechazada.irDestino.empty());
+    assert(rechazada.mapeos.empty());
+}
+
+void probarSecuenciaDeLlamadaConEtiqueta() {
+    Instruccion llamada(CodigoOperacion::Call, {Operando::crearEtiqueta("destino")}, 4);
+    llamada.etiqueta = "repetir";
+    MapeoTraduccion mapeo;
+    std::vector<InstruccionAArch64> secuencia = Traductor::traducirInstruccion(llamada, mapeo);
+    assert(secuencia.size() == 3);
+    assert(secuencia[0].emitirTexto() == "repetir: str x30, [sp, #-16]!");
+    assert(secuencia[1].emitirTexto() == "bl destino");
+    assert(secuencia[2].emitirTexto() == "ldr x30, [sp], #16");
+    assert(mapeo.codigoOrigen == "repetir: call destino");
+    assert(mapeo.codigoDestino == "repetir: str x30, [sp, #-16]!\nbl destino\nldr x30, [sp], #16");
+    for (const auto& instruccion : secuencia) {
+        assert(instruccion.lineaOrigen == 4);
+        assert(instruccion.reglaId == "CALL_DIRECT");
+    }
+
+    ResultadoTraduccion programa = Traductor::traducir("repetir: call destino\nret\ndestino: ret\n");
+    assert(programa.esExitoso());
+    assert(programa.codigoGenerado ==
+        "    repetir: str x30, [sp, #-16]!\n"
+        "    bl destino\n"
+        "    ldr x30, [sp], #16\n"
+        "    ret\n"
+        "    destino: ret\n");
+    assert(programa.mapeos[0].lineasDestinoAArch64 == std::vector<int>({1, 2, 3}));
+    assert(programa.mapeos[2].lineasDestinoAArch64 == std::vector<int>({5}));
 }
 
 int main() {
@@ -311,6 +423,8 @@ int main() {
     probarTraduccionMemoriaLocal();
     probarTraduccionStackYPrologoEpilogo();
     probarTraduccionLlamadas();
+    probarLlamadasSucesivasYAnidadas();
+    probarSecuenciaDeLlamadaConEtiqueta();
     probarTraduccionConEtiquetas();
     probarRechazoProgramasInvalidos();
     std::cout << "Todas las pruebas del traductor pasaron con exito.\n";

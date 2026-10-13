@@ -40,7 +40,7 @@ Emisión textual y generación de mapeos pedagógicos
 
 El núcleo del traductor se encuentra desacoplado como la biblioteca estática `traductor_nucleo` (`libtraductor_nucleo.a`), consumida tanto por la interfaz de línea de comandos (CLI) como por la suite de pruebas automatizadas.
 
-El último milestone implementado es **3.6 (CLI estable)**. La consolidación de **7.1 (pruebas de parsing)** exige separadores y operandos completos y rechaza literales fuera de `int64_t`. Todavía existen bloqueos semánticos en llamadas, flags y stack antes de iniciar la GUI; el ensamblado de los ejemplos no acredita equivalencia funcional.
+El último milestone implementado es **3.6 (CLI estable)**. La consolidación de **7.1 (pruebas de parsing)** exige separadores y operandos completos y rechaza literales fuera de `int64_t`. Las llamadas internas del milestone 3.5 preservan el enlace de retorno. Todavía existen bloqueos semánticos en flags, stack y codificación de operandos antes de iniciar la GUI; el ensamblado de los ejemplos no acredita equivalencia funcional.
 
 ### Capacidades implementadas
 - **Modelo de datos semántico:** Soporte de operandos tipados (registros, inmediatos numéricos de 64 bits, etiquetas y memoria local estructurada con base y desplazamiento).
@@ -50,7 +50,7 @@ El último milestone implementado es **3.6 (CLI estable)**. La consolidación de
   - Aritmética básica: `add reg, reg`, `add reg, imm`, `sub reg, reg`, `sub reg, imm`
   - Operaciones lógicas: `and reg, reg`, `and reg, imm`, `or reg, reg`, `or reg, imm`, `xor reg, reg`, `xor reg, imm`
   - Comparación y control de flujo: `cmp reg, reg`, `cmp reg, imm`, `jmp etiqueta`, saltos condicionales con signo (`je`, `jne`, `jl`, `jle`, `jg`, `jge`), llamadas a subrutina `call etiqueta`, retorno `ret` y definiciones de etiquetas (`etiqueta:`)
-- **Llamadas a subrutina y registro de enlace:** Traducción de `call etiqueta` a `bl etiqueta` en AArch64, validando la existencia de la etiqueta de destino y documentando pedagógicamente la correspondencia de la dirección de retorno en `x30` (`lr`) frente a la pila en x86-64.
+- **Llamadas a subrutina y registro de enlace:** Traducción de `call etiqueta` a una secuencia que guarda `x30` (`lr`) en un bloque temporal de 16 bytes, ejecuta `bl` y restaura el enlace al volver. Sólo llamadas internas bajo la convención y las restricciones de [ALCANCE_ABI.md](docs/ALCANCE_ABI.md), con un mapeo didáctico para las tres instrucciones destino.
 - **Gestión de pila, prólogo y epílogo:** Traducción de `push reg` y `pop reg` mediante `str` con pre-indexado (`[sp, #-16]!`) y `ldr` con post-indexado (`[sp], #16`), garantizando la estricta alineación a 16 bytes de la ABI AAPCS64 y permitiendo secuencias canónicas de marco de pila (`push rbp; mov rbp, rsp` y `mov rsp, rbp; pop rbp; ret`).
 - **Memoria local controlada:** Mapeo de accesos a pila con base `rbp` a `x29` en AArch64 mediante `ldr` y `str`, respetando el orden arquitectónico de operandos (registro primero en `str`) y validando contra direccionamientos complejos no permitidos.
 - **Traducción de 2 a 3 operandos:** Mapeo automático de la semántica destructiva de x86-64 (`add rax, 5`) a la forma explícita de tres operandos en AArch64 (`add x0, x0, #5`).
@@ -116,6 +116,8 @@ cmake --build build
 # Ejecutar todas las suites de prueba mediante CTest
 ctest --test-dir build --output-on-failure
 ```
+
+En macOS arm64 se añade una prueba nativa de retornos sucesivos y llamadas anidadas, con tiempo límite. Usa el compilador configurado y el ejemplo `09_llamadas_anidadas.s`; no requiere emulador ni dependencias nuevas.
 
 ### Uso de la herramienta CLI
 

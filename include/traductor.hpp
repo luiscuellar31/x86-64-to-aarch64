@@ -34,12 +34,12 @@ public:
     static ResultadoTraduccion traducirInstrucciones(const std::vector<Instruccion>& instrucciones);
 
     /**
-     * @brief Traduce una sola instrucción válida a su instrucción IR equivalente en AArch64.
+     * @brief Traduce una instrucción válida a su secuencia IR equivalente en AArch64.
      * @param instruccion Instrucción x86-64 validada.
      * @param mapeoSalida Mapeo pedagógico donde se registran reglaId y explicación didáctica.
-     * @return Instrucción AArch64 equivalente.
+     * @return Secuencia AArch64 completa, incluida la preservacion del enlace en call.
      */
-    static InstruccionAArch64 traducirInstruccion(const Instruccion& instruccion, MapeoTraduccion& mapeoSalida);
+    static std::vector<InstruccionAArch64> traducirInstruccion(const Instruccion& instruccion, MapeoTraduccion& mapeoSalida);
 };
 
 #endif // TRADUCTOR_HPP

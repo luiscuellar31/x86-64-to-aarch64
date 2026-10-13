@@ -2,7 +2,7 @@
 
 Este documento define la matriz técnica de correspondencia entre el subconjunto de x86-64 y AArch64.
 
-El estado «Soportado» registra formas reconocidas y reglas de emisión implementadas. Todavía no garantiza equivalencia funcional para todos sus operandos o programas: faltan controles de codificación, flags y stack, y preservación del retorno en llamadas.
+El estado «Soportado» registra formas reconocidas y reglas de emisión implementadas. Todavía no garantiza equivalencia funcional para todos sus operandos o programas: faltan controles de codificación, flags y stack. Las llamadas internas preservan el enlace de retorno bajo las restricciones descritas en [ALCANCE_ABI.md](ALCANCE_ABI.md).
 
 ---
 
@@ -41,7 +41,7 @@ En las etapas V0 y V1, el traductor opera **únicamente con registros y operacio
 | `jle` | `etiqueta` | Soportado (M3.2) | No | `b.le etiqueta` | Salto condicional si menor o igual con signo (`ZF = 1` o `SF != OF`). |
 | `jg` | `etiqueta` | Soportado (M3.2) | No | `b.gt etiqueta` | Salto condicional si mayor con signo (`ZF = 0` y `SF == OF`). |
 | `jge` | `etiqueta` | Soportado (M3.2) | No | `b.ge etiqueta` | Salto condicional si mayor o igual con signo (`SF == OF`). |
-| `call` | `etiqueta` | Soportado (M3.5) | No | `bl etiqueta` | Llamada a subrutina con enlace de retorno en `x30` / `lr` (*Branch with Link*). |
+| `call` | `etiqueta` | Soportado (M3.5) | No | `str x30, [sp, #-16]!; bl etiqueta; ldr x30, [sp], #16` | Preserva el enlace del llamante en un bloque temporal de 16 bytes. Sólo llamadas internas con stack restablecido al retornar. |
 | `push` | `reg` | Soportado (M3.4) | No | `str xReg, [sp, #-16]!` | Almacenamiento con pre-indexado en pila preservando alineación de 16 bytes. |
 | `pop` | `reg` | Soportado (M3.4) | No | `ldr xReg, [sp], #16` | Carga con post-indexado desde pila restaurando alineación de 16 bytes. |
 | `ret` | *(sin operandos)* | Soportado (V0) | No | `ret` | Retorno de subrutina (en AArch64 salta a la dirección en `x30`/`lr`). |

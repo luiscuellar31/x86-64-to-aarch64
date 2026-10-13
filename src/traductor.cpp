@@ -4,7 +4,7 @@
 #include "tabla_registros.hpp"
 #include <sstream>
 
-InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion, MapeoTraduccion& mapeoSalida) {
+static InstruccionAArch64 traducirInstruccionBase(const Instruccion& instruccion, MapeoTraduccion& mapeoSalida) {
     mapeoSalida.lineaOrigenX86 = instruccion.numeroLinea;
 
     // 1. Etiqueta pura (ej. "inicio:")
@@ -345,6 +345,45 @@ InstruccionAArch64 Traductor::traducirInstruccion(const Instruccion& instruccion
     return desconocido;
 }
 
+std::vector<InstruccionAArch64> Traductor::traducirInstruccion(const Instruccion& instruccion, MapeoTraduccion& mapeoSalida) {
+    InstruccionAArch64 instruccionBase = traducirInstruccionBase(instruccion, mapeoSalida);
+    std::vector<InstruccionAArch64> secuencia;
+
+    if (instruccion.esLlamada()) {
+        InstruccionAArch64 guardarEnlace(CodigoOperacionAArch64::Str, instruccion.numeroLinea);
+        guardarEnlace.agregarOperando(OperandoAArch64::crearRegistro("x30"));
+        guardarEnlace.agregarOperando(OperandoAArch64::crearMemoria("sp", -16, ModoIndexadoAArch64::PreIndexado));
+        secuencia.push_back(guardarEnlace);
+    }
+
+    secuencia.push_back(instruccionBase);
+
+    if (instruccion.esLlamada()) {
+        InstruccionAArch64 restaurarEnlace(CodigoOperacionAArch64::Ldr, instruccion.numeroLinea);
+        restaurarEnlace.agregarOperando(OperandoAArch64::crearRegistro("x30"));
+        restaurarEnlace.agregarOperando(OperandoAArch64::crearMemoria("sp", 16, ModoIndexadoAArch64::PostIndexado));
+        secuencia.push_back(restaurarEnlace);
+        mapeoSalida.explicacionCorta = "Guarda x30 en un bloque de 16 bytes antes de bl y lo restaura al volver; conserva el retorno del llamante y la alineacion previa de sp.";
+    }
+
+    // Una etiqueta en call debe apuntar al guardado del enlace, antes de bl.
+    if (instruccion.tieneEtiqueta() && !instruccion.esEtiquetaPura()) {
+        secuencia.front().etiqueta = instruccion.etiqueta;
+        mapeoSalida.codigoOrigen = instruccion.etiqueta + ": " + mapeoSalida.codigoOrigen;
+    }
+
+    mapeoSalida.codigoDestino.clear();
+    for (auto& instruccionDestino : secuencia) {
+        if (!mapeoSalida.codigoDestino.empty()) {
+            mapeoSalida.codigoDestino += "\n";
+        }
+        mapeoSalida.codigoDestino += instruccionDestino.emitirTexto();
+        instruccionDestino.reglaId = mapeoSalida.reglaId;
+        instruccionDestino.explicacion = mapeoSalida.explicacionCorta;
+    }
+    return secuencia;
+}
+
 ResultadoTraduccion Traductor::traducirInstrucciones(const std::vector<Instruccion>& instrucciones) {
     ResultadoTraduccion resultado;
     resultado.irOrigen = instrucciones;
@@ -366,23 +405,21 @@ ResultadoTraduccion Traductor::traducirInstrucciones(const std::vector<Instrucci
 
     for (const auto& inst : instrucciones) {
         MapeoTraduccion mapeo;
-        InstruccionAArch64 aarchInst = traducirInstruccion(inst, mapeo);
+        std::vector<InstruccionAArch64> secuencia = traducirInstruccion(inst, mapeo);
 
-        std::string textoLinea = aarchInst.emitirTexto();
-        if (!aarchInst.esEtiquetaPura()) {
-            codigoEmitido << "    " << textoLinea << "\n";
-        } else {
-            codigoEmitido << textoLinea << "\n";
+        for (const auto& aarchInst : secuencia) {
+            std::string textoLinea = aarchInst.emitirTexto();
+            if (!aarchInst.esEtiquetaPura()) {
+                codigoEmitido << "    " << textoLinea << "\n";
+            } else {
+                codigoEmitido << textoLinea << "\n";
+            }
+
+            mapeo.lineasDestinoAArch64.push_back(lineaAArch64Actual);
+            resultado.irDestino.push_back(aarchInst);
+            lineaAArch64Actual++;
         }
-
-        mapeo.lineasDestinoAArch64.push_back(lineaAArch64Actual);
         resultado.agregarMapeo(mapeo);
-
-        aarchInst.reglaId = mapeo.reglaId;
-        aarchInst.explicacion = mapeo.explicacionCorta;
-        resultado.irDestino.push_back(aarchInst);
-
-        lineaAArch64Actual++;
     }
 
     resultado.codigoGenerado = codigoEmitido.str();

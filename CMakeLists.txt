@@ -88,6 +88,18 @@ add_executable(test_cli tests/test_cli.cpp)
 target_link_libraries(test_cli PRIVATE traductor_nucleo)
 add_test(NAME TestCLI COMMAND test_cli)
 
+# Ejecutar el ensamblador traducido en el host soportado, con un tiempo limite.
+if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$" AND NOT CMAKE_CROSSCOMPILING)
+    add_test(NAME TestLlamadasNativas COMMAND ${CMAKE_COMMAND}
+        "-DTRADUCTOR=$<TARGET_FILE:x86_64_to_aarch64>"
+        "-DENTRADA=${CMAKE_CURRENT_SOURCE_DIR}/examples/validos/09_llamadas_anidadas.s"
+        "-DCOMPILADOR=${CMAKE_CXX_COMPILER}"
+        "-DCARPETA_PRUEBA=${CMAKE_CURRENT_BINARY_DIR}/prueba_llamadas_nativas"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/verificar_llamadas_nativas.cmake"
+    )
+    set_tests_properties(TestLlamadasNativas PROPERTIES TIMEOUT 20)
+endif()
+
 # Las comprobaciones con assert deben ejecutarse tambien en Release.
 foreach(objetivoPrueba IN ITEMS
     test_normalizador test_analizador_lexico test_analizador_sintactico
