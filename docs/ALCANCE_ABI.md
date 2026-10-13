@@ -6,15 +6,15 @@ Este documento delimita los supuestos de la interfaz binaria de aplicación (ABI
 
 ---
 
-## 1. Supuestos en la Etapa Inicial (V0)
+## 1. Convención interna de registros y retorno
 
-- **Funciones hoja simples (Leaf Functions):** El soporte inicial se centra en secuencias lineales de código que terminan en `ret` sin invocar subrutinas adicionales (`call` no forma parte de V0).
+- **Funciones hoja y llamadas internas:** Se admiten funciones que terminan en `ret`, tanto sin llamadas como con `call` a etiquetas del mismo programa. Las llamadas internas preservan el enlace de retorno según las reglas de la sección 3.
 - **Convención de retorno:** El valor de resultado de la función reside en `rax` en x86-64, el cual se corresponde directamente con `x0` en AArch64.
 - **Pila / Stack:** Se soportan funciones hoja con o sin marco de pila explícito (*stack frame*).
 
 ---
 
-## 2. Gestión de Stack, Prólogo y Epílogo (Milestone 3.4)
+## 2. Gestión de pila, prólogo y epílogo
 
 ### Alineación estricta de pila en AArch64 (AAPCS64)
 - En **x86-64**, la instrucción `push` decrementa `rsp` en 8 bytes y `pop` lo incrementa en 8 bytes.
@@ -58,7 +58,7 @@ Donde `rbp` mapea al registro de marco (*frame pointer*) `x29` y `rsp` al punter
 
 ---
 
-## 3. Soporte de Llamadas de Subrutinas (Milestone 3.5)
+## 3. Llamadas internas con preservación del enlace de retorno
 
 El traductor soporta llamadas directas a etiquetas definidas en el mismo programa. Cada `call etiqueta` genera esta secuencia:
 
@@ -70,7 +70,7 @@ ldr x30, [sp], #16
 
 Se reserva temporalmente un bloque de 16 bytes para el enlace del llamante, se ejecuta la llamada y se recupera el enlace al volver. La secuencia conserva la alineación previa de `sp`; exige una pila inicialmente alineada y que la subrutina restablezca su stack antes de retornar. Se aplica también a llamadas sucesivas y anidadas, sin analizar límites de funciones ni reescribir cada `ret`.
 
-Esta regla cubre funciones internas que trabajan con los registros del subconjunto. El bloque temporal cambia el diseño de la pila frente a la dirección de retorno de 8 bytes de x86-64. Se excluyen de este incremento argumentos en pila, lectura o modificación de la dirección de retorno y accesos que dependan de ese diseño. El validador todavía no comprueba todos esos requisitos; deben respetarse en los programas del corpus.
+Esta regla cubre funciones internas que trabajan con los registros del subconjunto. El bloque temporal cambia el diseño de la pila frente a la dirección de retorno de 8 bytes de x86-64. Quedan fuera del soporte de llamadas internas los argumentos en pila, la lectura o modificación de la dirección de retorno y los accesos que dependan de ese diseño. El validador todavía no comprueba todos esos requisitos; deben respetarse en los programas del corpus.
 
 Una etiqueta que precede a `call` se emite en el guardado de `x30`, para que un salto a esa etiqueta ejecute la secuencia completa. Las tres instrucciones comparten línea de origen, regla `CALL_DIRECT` y explicación; el mapeo registra las tres líneas destino.
 
@@ -83,7 +83,7 @@ Una etiqueta que precede a `call` se emite en el guardado de `x30`, para que un 
 3. **Paso de parámetros y convención de retorno:**
    - En **System V AMD64**, los primeros seis argumentos enteros se pasan en `rdi`, `rsi`, `rdx`, `rcx`, `r8`, `r9`, y el valor de retorno en `rax`.
    - En **AAPCS64**, los argumentos se reciben en `x0` a `x7`, y el retorno en `x0`.
-   - El mapeo inyectivo del traductor (`rax` → `x0`, `rdi` → `x1`, `rsi` → `x2`, etc.) es una convención interna para código traducido. No adapta los argumentos a una interfaz pública AAPCS64: el primer argumento permanece en `x1`, mientras AAPCS64 utiliza `x0`. La interoperabilidad con funciones externas queda fuera de este incremento de llamadas internas.
+   - El mapeo inyectivo del traductor (`rax` → `x0`, `rdi` → `x1`, `rsi` → `x2`, etc.) es una convención interna para código traducido. No adapta los argumentos a una interfaz pública AAPCS64: el primer argumento permanece en `x1`, mientras AAPCS64 utiliza `x0`. La interoperabilidad con funciones externas queda fuera del soporte de llamadas internas.
 4. **Clasificación de Registros:**
    - **Volátiles (*caller-saved* / preservados por el llamante):** `x0` a `x15`. Pueden ser modificados libremente por la función invocada.
    - **No volátiles (*callee-saved* / preservados por la función invocada):** `x19` a `x28`. Toda función que los modifique debe preservarlos y restaurarlos antes de retornar.

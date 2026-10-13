@@ -71,7 +71,7 @@ void probarNormalizacionProgramaCompleto() {
 }
 
 int main() {
-    std::cout << "=== Ejecutando pruebas unitarias de Normalizador (Subfase 5.1) ===\n";
+    std::cout << "=== Ejecutando pruebas unitarias de Normalizador ===\n";
     probarNormalizacionLineaIndividual();
     probarNormalizacionProgramaCompleto();
     std::cout << "Todas las pruebas pasaron correctamente.\n";

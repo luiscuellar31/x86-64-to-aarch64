@@ -55,7 +55,7 @@ void probarResultadoConErrores() {
 }
 
 int main() {
-    std::cout << "=== Pruebas unitarias de ResultadoTraduccion (Fase 2, Subfase 6) ===\n";
+    std::cout << "=== Pruebas unitarias de ResultadoTraduccion ===\n";
     probarResultadoExitosoConMapeos();
     probarResultadoConErrores();
     std::cout << "Todas las pruebas de resultado de traduccion pasaron con exito.\n";

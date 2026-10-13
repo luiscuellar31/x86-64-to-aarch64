@@ -63,7 +63,7 @@ void probarGestorDiagnosticos() {
 }
 
 int main() {
-    std::cout << "=== Pruebas unitarias de Diagnosticos Estructurados (Fase 2, Subfase 5) ===\n";
+    std::cout << "=== Pruebas unitarias de Diagnosticos Estructurados ===\n";
     probarFormateoDiagnostico();
     probarGestorDiagnosticos();
     std::cout << "Todas las pruebas de diagnosticos pasaron con exito.\n";

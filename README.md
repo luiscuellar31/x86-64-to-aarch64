@@ -40,9 +40,11 @@ Emisión textual y generación de mapeos pedagógicos
 
 El núcleo del traductor se encuentra desacoplado como la biblioteca estática `traductor_nucleo` (`libtraductor_nucleo.a`), consumida tanto por la interfaz de línea de comandos (CLI) como por la suite de pruebas automatizadas.
 
-El último milestone implementado es **3.6 (CLI estable)**. La consolidación de **7.1 (pruebas de parsing)** exige separadores y operandos completos y rechaza literales fuera de `int64_t`. Las llamadas internas del milestone 3.5 preservan el enlace de retorno. Todavía existen bloqueos semánticos en flags, stack y codificación de operandos antes de iniciar la GUI; el ensamblado de los ejemplos no acredita equivalencia funcional.
+La CLI permite traducir archivos, guardar el resultado y consultar ayuda, versión, explicaciones y representaciones intermedias. El análisis sintáctico exige comas entre operandos, expresiones completas y literales numéricos dentro del rango de `int64_t`.
 
-Las pruebas de formas de operandos de **7.2 (validación)** comprueban registros de 64 bits, memoria local con base `rbp`/`rsp`, ancho de 64 bits, usos permitidos de `rsp` y etiquetas con una única definición. Las restricciones se detallan en [SINTAXIS_ENTRADA.md](docs/SINTAXIS_ENTRADA.md).
+El validador comprueba registros y accesos a memoria de 64 bits, bases locales `rbp`/`rsp`, usos permitidos de `rsp` y etiquetas con una única definición. Las restricciones se detallan en [SINTAXIS_ENTRADA.md](docs/SINTAXIS_ENTRADA.md).
+
+Las pruebas verifican la emisión, los diagnósticos y los mapeos didácticos. Aún faltan comprobaciones generales de codificación de operandos, dependencias de flags y alineación, balance y distribución de la pila. La aceptación de un programa y el ensamblado de su salida no demuestran equivalencia funcional para cualquier entrada.
 
 ### Capacidades implementadas
 - **Modelo de datos semántico:** Soporte de operandos tipados (registros, inmediatos numéricos de 64 bits, etiquetas y memoria local estructurada con base y desplazamiento).
@@ -53,8 +55,8 @@ Las pruebas de formas de operandos de **7.2 (validación)** comprueban registros
   - Operaciones lógicas: `and reg, reg`, `and reg, imm`, `or reg, reg`, `or reg, imm`, `xor reg, reg`, `xor reg, imm`
   - Comparación y control de flujo: `cmp reg, reg`, `cmp reg, imm`, `jmp etiqueta`, saltos condicionales con signo (`je`, `jne`, `jl`, `jle`, `jg`, `jge`), llamadas a subrutina `call etiqueta`, retorno `ret` y definiciones de etiquetas (`etiqueta:`)
 - **Llamadas a subrutina y registro de enlace:** Traducción de `call etiqueta` a una secuencia que guarda `x30` (`lr`) en un bloque temporal de 16 bytes, ejecuta `bl` y restaura el enlace al volver. Sólo llamadas internas bajo la convención y las restricciones de [ALCANCE_ABI.md](docs/ALCANCE_ABI.md), con un mapeo didáctico para las tres instrucciones destino.
-- **Gestión de pila, prólogo y epílogo:** Traducción de `push reg` y `pop reg` mediante `str` con pre-indexado (`[sp, #-16]!`) y `ldr` con post-indexado (`[sp], #16`), garantizando la estricta alineación a 16 bytes de la ABI AAPCS64 y permitiendo secuencias canónicas de marco de pila (`push rbp; mov rbp, rsp` y `mov rsp, rbp; pop rbp; ret`).
-- **Memoria local controlada:** Mapeo de accesos a pila con base `rbp` a `x29` en AArch64 mediante `ldr` y `str`, respetando el orden arquitectónico de operandos (registro primero en `str`) y validando contra direccionamientos complejos no permitidos.
+- **Gestión de pila, prólogo y epílogo:** Traducción de `push reg` y `pop reg`, con registro distinto de `rsp`, mediante `str` con pre-indexado (`[sp, #-16]!`) y `ldr` con post-indexado (`[sp], #16`). Estas reglas conservan una alineación previa de 16 bytes y permiten secuencias canónicas de marco de pila (`push rbp; mov rbp, rsp` y `mov rsp, rbp; pop rbp; ret`).
+- **Memoria local controlada:** Mapeo de accesos a pila con base `rbp` a `x29` y con base `rsp` a `sp` mediante `ldr` y `str`, respetando el orden arquitectónico de operandos (registro primero en `str`) y rechazando direccionamientos complejos no permitidos.
 - **Traducción de 2 a 3 operandos:** Mapeo automático de la semántica destructiva de x86-64 (`add rax, 5`) a la forma explícita de tres operandos en AArch64 (`add x0, x0, #5`).
 - **Diagnósticos estructurados:** Detección de errores con número de línea, códigos tipificados (`E001`, `E014`, `E021`, `E022`, `E023`, `E024`, `E030`, `E040`, `E041`) y mensajes descriptivos en español. `E041` identifica una etiqueta definida más de una vez.
 - **Mapeos didácticos:** Cada instrucción traducida vincula su línea de origen, regla aplicada y explicación técnica del mapeo arquitectónico.

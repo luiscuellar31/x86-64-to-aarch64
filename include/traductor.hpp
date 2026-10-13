@@ -13,7 +13,7 @@
  * Aplica el pipeline completo:
  * 1. Normalización
  * 2. Análisis sintáctico
- * 3. Validación semántica (Gate V0)
+ * 3. Validación de registros, formas de operandos y etiquetas
  * 4. Mapeo determinista de registros y reglas semánticas
  * 5. Emisión de código AArch64 con metadatos explicativos
  */

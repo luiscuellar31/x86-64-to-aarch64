@@ -1,6 +1,6 @@
 # Especificación de Sintaxis de Entrada
 
-Este documento define la sintaxis formal y las reglas léxicas del subconjunto de ensamblador x86-64 aceptado por el traductor en sus etapas iniciales (V0/V1).
+Este documento define la sintaxis formal y las reglas léxicas del subconjunto de ensamblador x86-64 aceptado por el traductor, limitado a operaciones enteras de 64 bits y memoria local.
 
 ---
 

@@ -31,7 +31,7 @@ static const std::unordered_map<std::string, std::string> kMapeoRegistros = {
     {"rsp", "sp"}
 };
 
-// Subregistros x86 conocidos (32-bit, 16-bit, 8-bit) no soportados en el MVP V0
+// Subregistros x86 de 32, 16 y 8 bits excluidos del subconjunto de 64 bits
 static const std::unordered_set<std::string> kSubregistros = {
     // 32-bit
     "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp",

@@ -79,7 +79,7 @@ void AnalizadorCLI::mostrarAyuda(std::ostream& salida) {
 
 void AnalizadorCLI::mostrarVersion(std::ostream& salida) {
     salida << "x86_64_to_aarch64 version 0.3.6\n"
-           << "Traductor estatico de x86-64 a AArch64 (Fase 3: Nucleo del Traductor)\n";
+           << "Traductor estatico de ensamblador x86-64 a AArch64 (subconjunto entero de 64 bits)\n";
 }
 
 int AnalizadorCLI::ejecutar(const OpcionesCLI& opciones, std::ostream& salida, std::ostream& error) {

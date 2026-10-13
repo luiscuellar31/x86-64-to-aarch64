@@ -13,25 +13,25 @@ Este documento define la estrategia para manejar las diferencias entre el regist
 
 ---
 
-## 2. Política para la Etapa Inicial (V0 y Milestone 3.1)
+## 2. Emisión de aritmética y lógica sin actualización de flags
 
-- Dado que en esta fase no se soportan saltos condicionales dependientes de flags aritméticos/lógicos, no existe dependencia posterior del estado de las banderas.
+- Las reglas de aritmética y lógica emiten instrucciones AArch64 que no actualizan `NZCV`. Para conservar el comportamiento del programa, las banderas producidas por esas operaciones en x86-64 no deben determinar saltos posteriores. El validador todavía no comprueba esta restricción.
 - **Aritmética básica (`add`, `sub`):**
   - Se traducen a sus versiones directas en AArch64:
     - `add rax, 5`  ⟶  `add x0, x0, #5`
     - `sub rax, rbx` ⟶  `sub x0, x0, x19`
 - **Operaciones lógicas (`and`, `or`, `xor`):**
   - En x86-64, estas operaciones limpian incondicionalmente `CF` y `OF` (los ponen en 0), y actualizan `ZF`, `SF` y `PF`.
-  - En AArch64, `and`, `orr` y `eor` preservan intacto el registro `NZCV`. Para actualizar banderas se requeriría `ands` (que actualiza `N` y `Z`, limpiando `C` y `V`), pero al no existir saltos dependientes, la emisión limpia sin sufijo `s` es la más eficiente y segura.
+  - En AArch64, `and`, `orr` y `eor` preservan intacto el registro `NZCV`. `ands` permite actualizar `N` y `Z`, limpiando `C` y `V`, pero las reglas actuales emiten las formas sin actualización de banderas.
   - Traducciones directas emitidas:
     - `and rax, 15`   ⟶ `and x0, x0, #15`
     - `or  rax, rbx`  ⟶ `orr x0, x0, x19`
     - `xor rax, rax`  ⟶ `eor x0, x0, x0`
-- Esta decisión evita ruido de instrucciones y mutaciones innecesarias del estado de la CPU en el código generado.
+- Esta emisión conserva el resultado numérico o lógico cuando los operandos se pueden codificar, pero no reproduce los cambios de flags de x86-64.
 
 ---
 
-## 3. Política para Saltos y Comparaciones (Milestone 3.2)
+## 3. Comparaciones y saltos condicionales basados en cmp
 
 ### 3.1. Semántica y efecto de `cmp`
 - **En x86-64:** `cmp op1, op2` ejecuta internamente la resta aritmética `op1 - op2`, descartando el resultado numérico y actualizando las banderas de estado del registro `RFLAGS`:
@@ -63,4 +63,4 @@ Las condiciones con signo se mapean de forma unívoca y determinista entre ambas
 - Existe una diferencia arquitectónica sutil pero fundamental:
   - En x86-64, la resta activa `CF = 1` si hubo un préstamo (*borrow*).
   - En AArch64, la resta define el flag `C` como *not borrow* (`C = 1` si NO hubo préstamo, `C = 0` si hubo préstamo).
-- Por este motivo, el subconjunto inicial soporta exclusivamente comparaciones enteras con signo (`signed`), donde la relación entre `N` (o `SF`) y `V` (o `OF`) es directamente isomórfica. Las instrucciones sin signo (`ja`, `jb`, etc.) se reservan para etapas posteriores cuando se incorpore la inversión del flag de acarreo en el modelo semántico.
+- El traductor implementa saltos de igualdad y orden con signo (`signed`), donde la relación entre `N` (o `SF`) y `V` (o `OF`) permite usar las condiciones de la tabla anterior. Los saltos de orden sin signo (`ja`, `jb`, etc.) quedan fuera del subconjunto soportado; su traducción requeriría considerar la diferencia en la interpretación del acarreo.
