@@ -42,7 +42,7 @@ El núcleo del traductor se encuentra desacoplado como la biblioteca estática `
 
 El último milestone implementado es **3.6 (CLI estable)**. La consolidación de **7.1 (pruebas de parsing)** exige separadores y operandos completos y rechaza literales fuera de `int64_t`. Las llamadas internas del milestone 3.5 preservan el enlace de retorno. Todavía existen bloqueos semánticos en flags, stack y codificación de operandos antes de iniciar la GUI; el ensamblado de los ejemplos no acredita equivalencia funcional.
 
-Las pruebas de formas de operandos de **7.2 (validación)** comprueban registros de 64 bits, memoria local con base `rbp`/`rsp`, ancho de 64 bits y usos permitidos de `rsp`. Las restricciones se detallan en [SINTAXIS_ENTRADA.md](docs/SINTAXIS_ENTRADA.md).
+Las pruebas de formas de operandos de **7.2 (validación)** comprueban registros de 64 bits, memoria local con base `rbp`/`rsp`, ancho de 64 bits, usos permitidos de `rsp` y etiquetas con una única definición. Las restricciones se detallan en [SINTAXIS_ENTRADA.md](docs/SINTAXIS_ENTRADA.md).
 
 ### Capacidades implementadas
 - **Modelo de datos semántico:** Soporte de operandos tipados (registros, inmediatos numéricos de 64 bits, etiquetas y memoria local estructurada con base y desplazamiento).
@@ -56,7 +56,7 @@ Las pruebas de formas de operandos de **7.2 (validación)** comprueban registros
 - **Gestión de pila, prólogo y epílogo:** Traducción de `push reg` y `pop reg` mediante `str` con pre-indexado (`[sp, #-16]!`) y `ldr` con post-indexado (`[sp], #16`), garantizando la estricta alineación a 16 bytes de la ABI AAPCS64 y permitiendo secuencias canónicas de marco de pila (`push rbp; mov rbp, rsp` y `mov rsp, rbp; pop rbp; ret`).
 - **Memoria local controlada:** Mapeo de accesos a pila con base `rbp` a `x29` en AArch64 mediante `ldr` y `str`, respetando el orden arquitectónico de operandos (registro primero en `str`) y validando contra direccionamientos complejos no permitidos.
 - **Traducción de 2 a 3 operandos:** Mapeo automático de la semántica destructiva de x86-64 (`add rax, 5`) a la forma explícita de tres operandos en AArch64 (`add x0, x0, #5`).
-- **Diagnósticos estructurados:** Detección de errores con número de línea, códigos tipificados (`E001`, `E014`, `E021`, `E022`, `E023`, `E040`) y mensajes descriptivos en español.
+- **Diagnósticos estructurados:** Detección de errores con número de línea, códigos tipificados (`E001`, `E014`, `E021`, `E022`, `E023`, `E024`, `E030`, `E040`, `E041`) y mensajes descriptivos en español. `E041` identifica una etiqueta definida más de una vez.
 - **Mapeos didácticos:** Cada instrucción traducida vincula su línea de origen, regla aplicada y explicación técnica del mapeo arquitectónico.
 - **Interfaz de línea de comandos (CLI) estable:** Despachador completo con opciones `--help`, `--version`, `--explain`, `--dump-ir` y salida a archivo mediante `-o <archivo>` o redirección estándar.
 

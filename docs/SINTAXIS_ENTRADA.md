@@ -31,6 +31,7 @@ mov rax, 10    ; Comentario al final de instrucción
 
 - Las etiquetas deben iniciar con una letra (`a-z`, `A-Z`) o guion bajo (`_`), seguidas de caracteres alfanuméricos o guiones bajos: `^[a-zA-Z_][a-zA-Z0-9_]*$`.
 - Las etiquetas van seguidas de dos puntos (`:`).
+- Cada nombre debe definirse una sola vez en el programa. Las definiciones repetidas, incluidas las que preceden a una instrucción, se rechazan con `E041`. Se permiten referencias a etiquetas definidas más adelante.
 - Los nombres de registros se reservan para operandos y no se admiten como etiquetas.
 - Pueden presentarse en su propia línea o precediendo a una instrucción:
 

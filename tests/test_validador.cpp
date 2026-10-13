@@ -431,6 +431,28 @@ void probarFormasPermitidasConRsp() {
     }
 }
 
+void probarEtiquetasUnicasYOrdenDeDiagnosticos() {
+    for (const auto& texto : {"inicio:\nret\ninicio:\nret", "inicio: mov rax, 1\ninicio: ret"}) {
+        ResultadoTraduccion resultado = Traductor::traducir(texto);
+        assert(!resultado.esExitoso());
+        assert(resultado.diagnosticos.size() == 1);
+        assert(resultado.diagnosticos[0].codigo == CodigosDiagnostico::kEtiquetaDuplicada);
+        assert(resultado.codigoGenerado.empty());
+        assert(resultado.irDestino.empty());
+        assert(resultado.mapeos.empty());
+    }
+
+    ResultadoTraduccion distintos = Traductor::traducir(
+        "call Destino\njmp destino\nDestino: ret\ndestino: ret\n");
+    assert(distintos.esExitoso());
+    ResultadoTraduccion orden = Traductor::traducir("mov eax, 1\ninicio: ret\ninicio: ret");
+    assert(orden.diagnosticos.size() == 2);
+    assert(orden.diagnosticos[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
+    assert(orden.diagnosticos[0].numeroLinea == 1);
+    assert(orden.diagnosticos[1].codigo == CodigosDiagnostico::kEtiquetaDuplicada);
+    assert(orden.diagnosticos[1].numeroLinea == 3);
+}
+
 void probarSubregistrosEnLasFormasSoportadas() {
     const std::vector<std::string> subregistros = {"eax", "ax", "al", "ah", "r8d", "r8w", "r8b"};
     for (const auto& mnemonico : {"mov", "add", "sub", "and", "or", "xor", "cmp"}) {
@@ -465,6 +487,7 @@ int main() {
     probarUsoDeRspComoDato();
     probarAnchoDeMemoriaEnLaBiblioteca();
     probarFormasPermitidasConRsp();
+    probarEtiquetasUnicasYOrdenDeDiagnosticos();
     probarSubregistrosEnLasFormasSoportadas();
     std::cout << "Todas las condiciones Gate del validador pasaron con exito.\n";
     return 0;

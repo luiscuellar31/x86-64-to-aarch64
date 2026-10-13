@@ -257,6 +257,25 @@ static void probarRechazoSinSobrescribir(const std::string& rutaEntrada, const s
     assert(contenidoPreservado.str() == "contenido anterior\n");
 }
 
+static void probarEtiquetaDuplicadaSinSobrescribir(const std::string& rutaEntrada, const std::string& rutaSalida) {
+    std::ofstream archivoEntrada(rutaEntrada);
+    archivoEntrada << "inicio: ret\ninicio: ret\n";
+    archivoEntrada.close();
+
+    OpcionesCLI opciones;
+    opciones.archivoEntrada = rutaEntrada;
+    opciones.archivoSalida = rutaSalida;
+    std::stringstream flujoSalida, flujoError;
+    assert(AnalizadorCLI::ejecutar(opciones, flujoSalida, flujoError) == 1);
+    assert(flujoSalida.str().empty());
+    assert(flujoError.str().find("linea 2: [E041]") != std::string::npos);
+
+    std::ifstream archivoPreservado(rutaSalida);
+    std::stringstream contenidoPreservado;
+    contenidoPreservado << archivoPreservado.rdbuf();
+    assert(contenidoPreservado.str() == "contenido anterior\n");
+}
+
 void probarEjecucionCLI() {
     std::cout << "[Test CLI] Probando ejecucion y despacho de opciones...\n";
     probarEjecucionAyuda();
@@ -279,6 +298,7 @@ void probarEjecucionCLI() {
     probarVolcadoIR(rutaEntrada);
     probarArchivoSalida(rutaEntrada, rutaSalida);
     probarRechazoSinSobrescribir(rutaEntrada, rutaSalida);
+    probarEtiquetaDuplicadaSinSobrescribir(rutaEntrada, rutaSalida);
 
     std::remove(rutaEntrada.c_str());
     std::remove(rutaSalida.c_str());

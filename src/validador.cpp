@@ -353,7 +353,16 @@ bool Validador::validarPrograma(const std::vector<Instruccion>& instrucciones, G
     }
 
     bool todoValido = true;
+    std::unordered_set<std::string> etiquetasRevisadas;
     for (const auto& instruccion : instrucciones) {
+        if (instruccion.tieneEtiqueta()) {
+            if (etiquetasRevisadas.find(instruccion.etiqueta) != etiquetasRevisadas.end()) {
+                gestor.agregarError(CodigosDiagnostico::kEtiquetaDuplicada, instruccion.numeroLinea,
+                                    "etiqueta '" + instruccion.etiqueta + "' definida mas de una vez");
+                todoValido = false;
+            }
+            etiquetasRevisadas.insert(instruccion.etiqueta);
+        }
         if (!validarInstruccion(instruccion, gestor)) {
             todoValido = false;
             continue;

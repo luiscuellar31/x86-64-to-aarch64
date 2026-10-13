@@ -31,6 +31,7 @@ namespace CodigosDiagnostico {
     inline const std::string kInmediatoInvalido = "E024";
     inline const std::string kSintaxisInvalida = "E030";
     inline const std::string kEtiquetaNoDefinida = "E040";
+    inline const std::string kEtiquetaDuplicada = "E041";
 }
 
 /**
