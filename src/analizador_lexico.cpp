@@ -104,7 +104,7 @@ std::vector<Token> AnalizadorLexico::tokenizarLinea(const std::string& textoLine
         bool esDigito = (std::isdigit(static_cast<unsigned char>(caracterActual)) != 0);
 
         if (esSignoConDigito || esDigito) {
-            size_t inicioNum = indice;
+            size_t inicioNumero = indice;
 
             // Consumir signo si existe
             if (caracterActual == '+' || caracterActual == '-') {
@@ -125,7 +125,7 @@ std::vector<Token> AnalizadorLexico::tokenizarLinea(const std::string& textoLine
                 }
             }
 
-            std::string literalInmediato = textoLinea.substr(inicioNum, indice - inicioNum);
+            std::string literalInmediato = textoLinea.substr(inicioNumero, indice - inicioNumero);
             tokens.push_back(Token(TipoToken::Inmediato, literalInmediato, numeroLinea, columnaActual));
             continue;
         }

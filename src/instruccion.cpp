@@ -137,7 +137,9 @@ std::string OperandoMemoria::aTexto() const {
     if (desplazamiento > 0) {
         return "[" + registroBase + " + " + std::to_string(desplazamiento) + "]";
     }
-    return "[" + registroBase + " - " + std::to_string(desplazamiento).substr(1) + "]";
+    std::string desplazamientoTexto = std::to_string(desplazamiento);
+    std::string magnitudTexto = desplazamientoTexto.substr(1);
+    return "[" + registroBase + " - " + magnitudTexto + "]";
 }
 
 Operando::Operando()
@@ -195,9 +197,9 @@ Operando Operando::crearInmediato(const std::string& valorInmediato) {
 
     try {
         size_t caracteresLeidos = 0;
-        int64_t num = std::stoll(valorInmediato, &caracteresLeidos, base);
+        int64_t numero = std::stoll(valorInmediato, &caracteresLeidos, base);
         if (caracteresLeidos == valorInmediato.size()) {
-            return Operando(TipoOperando::Inmediato, valorInmediato, num);
+            return Operando(TipoOperando::Inmediato, valorInmediato, numero);
         }
     } catch (const std::invalid_argument&) {
         return Operando(TipoOperando::Desconocido, valorInmediato);
@@ -216,8 +218,8 @@ Operando Operando::crearEtiqueta(const std::string& nombreEtiqueta) {
 }
 
 Operando Operando::crearMemoria(const std::string& registroBase, int64_t desplazamiento, int anchoBits) {
-    OperandoMemoria mem(registroBase, desplazamiento, anchoBits);
-    return Operando(mem);
+    OperandoMemoria operandoMemoria(registroBase, desplazamiento, anchoBits);
+    return Operando(operandoMemoria);
 }
 
 Operando Operando::crearMemoria(const OperandoMemoria& opMemoria) {

@@ -4,61 +4,62 @@
 #include <sstream>
 
 ResultadoParseoCLI AnalizadorCLI::parsear(int argc, char* argv[]) {
-    ResultadoParseoCLI res;
+    ResultadoParseoCLI resultado;
 
     // Sin argumentos se ejecuta la demostracion interactiva por defecto
     if (argc <= 1) {
-        res.opciones.ejecutarDemo = true;
-        return res;
+        resultado.opciones.ejecutarDemo = true;
+        return resultado;
     }
 
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
+    for (int indiceArgumento = 1; indiceArgumento < argc; ++indiceArgumento) {
+        std::string argumento = argv[indiceArgumento];
 
-        if (arg == "-h" || arg == "--help") {
-            res.opciones.mostrarAyuda = true;
-        } else if (arg == "-v" || arg == "--version") {
-            res.opciones.mostrarVersion = true;
-        } else if (arg == "--explain") {
-            res.opciones.explicar = true;
-        } else if (arg == "--dump-ir") {
-            res.opciones.volcarIR = true;
-        } else if (arg == "-o" || arg == "--output") {
-            if (i + 1 < argc) {
-                res.opciones.archivoSalida = argv[++i];
+        if (argumento == "-h" || argumento == "--help") {
+            resultado.opciones.mostrarAyuda = true;
+        } else if (argumento == "-v" || argumento == "--version") {
+            resultado.opciones.mostrarVersion = true;
+        } else if (argumento == "--explain") {
+            resultado.opciones.explicar = true;
+        } else if (argumento == "--dump-ir") {
+            resultado.opciones.volcarIR = true;
+        } else if (argumento == "-o" || argumento == "--output") {
+            if (indiceArgumento + 1 < argc) {
+                indiceArgumento++;
+                resultado.opciones.archivoSalida = argv[indiceArgumento];
             } else {
-                res.exito = false;
-                res.mensajeError = "Error: la opción '" + arg + "' requiere un argumento con la ruta del archivo.";
-                return res;
+                resultado.exito = false;
+                resultado.mensajeError = "Error: la opción '" + argumento + "' requiere un argumento con la ruta del archivo.";
+                return resultado;
             }
-        } else if (arg.rfind("-o", 0) == 0 && arg.size() > 2) {
+        } else if (argumento.rfind("-o", 0) == 0 && argumento.size() > 2) {
             // Soporte para forma pegada: -oarchivo.s
-            res.opciones.archivoSalida = arg.substr(2);
-        } else if (!arg.empty() && arg[0] == '-') {
-            res.exito = false;
-            res.mensajeError = "Error: opción desconocida '" + arg + "'. Use --help para consultar las opciones disponibles.";
-            return res;
+            resultado.opciones.archivoSalida = argumento.substr(2);
+        } else if (!argumento.empty() && argumento[0] == '-') {
+            resultado.exito = false;
+            resultado.mensajeError = "Error: opción desconocida '" + argumento + "'. Use --help para consultar las opciones disponibles.";
+            return resultado;
         } else {
             // Argumento posicional (archivo de entrada)
-            if (res.opciones.archivoEntrada.empty()) {
-                res.opciones.archivoEntrada = arg;
+            if (resultado.opciones.archivoEntrada.empty()) {
+                resultado.opciones.archivoEntrada = argumento;
             } else {
-                res.exito = false;
-                res.mensajeError = "Error: se especificó más de un archivo de entrada ('" +
-                                   res.opciones.archivoEntrada + "' y '" + arg + "').";
-                return res;
+                resultado.exito = false;
+                resultado.mensajeError = "Error: se especificó más de un archivo de entrada ('" +
+                                   resultado.opciones.archivoEntrada + "' y '" + argumento + "').";
+                return resultado;
             }
         }
     }
 
     // Validacion: si no se pide ayuda ni version, debe existir un archivo de entrada
-    if (!res.opciones.mostrarAyuda && !res.opciones.mostrarVersion && res.opciones.archivoEntrada.empty()) {
-        res.exito = false;
-        res.mensajeError = "Error: no se especificó ningún archivo de entrada. Use --help para consultar el uso.";
-        return res;
+    if (!resultado.opciones.mostrarAyuda && !resultado.opciones.mostrarVersion && resultado.opciones.archivoEntrada.empty()) {
+        resultado.exito = false;
+        resultado.mensajeError = "Error: no se especificó ningún archivo de entrada. Use --help para consultar el uso.";
+        return resultado;
     }
 
-    return res;
+    return resultado;
 }
 
 void AnalizadorCLI::mostrarAyuda(std::ostream& salida) {
@@ -113,22 +114,22 @@ int AnalizadorCLI::ejecutar(const OpcionesCLI& opciones, std::ostream& salida, s
     }
 
     // Lectura del archivo de entrada
-    std::ifstream archivo(opciones.archivoEntrada);
-    if (!archivo.is_open()) {
+    std::ifstream archivoEntrada(opciones.archivoEntrada);
+    if (!archivoEntrada.is_open()) {
         error << "Error: no se pudo abrir el archivo de entrada \"" << opciones.archivoEntrada << "\".\n";
         return 1;
     }
 
-    std::stringstream buffer;
-    buffer << archivo.rdbuf();
-    std::string contenido = buffer.str();
+    std::stringstream flujoEntrada;
+    flujoEntrada << archivoEntrada.rdbuf();
+    std::string codigoFuente = flujoEntrada.str();
 
-    ResultadoTraduccion resultado = Traductor::traducir(contenido);
+    ResultadoTraduccion resultado = Traductor::traducir(codigoFuente);
 
     if (!resultado.esExitoso()) {
         error << "Error en la traduccion de \"" << opciones.archivoEntrada << "\":\n";
-        for (const auto& diag : resultado.diagnosticos) {
-            error << "  " << diag.formatear() << "\n";
+        for (const auto& diagnostico : resultado.diagnosticos) {
+            error << "  " << diagnostico.formatear() << "\n";
         }
         return 1;
     }

@@ -113,8 +113,8 @@ OperandoAArch64 OperandoAArch64::crearEtiqueta(const std::string& nombreEtiqueta
 }
 
 OperandoAArch64 OperandoAArch64::crearMemoria(const std::string& registroBase, int64_t desplazamiento, ModoIndexadoAArch64 modo) {
-    OperandoMemoriaAArch64 mem(registroBase, desplazamiento, modo);
-    return OperandoAArch64(mem);
+    OperandoMemoriaAArch64 operandoMemoria(registroBase, desplazamiento, modo);
+    return OperandoAArch64(operandoMemoria);
 }
 
 OperandoAArch64 OperandoAArch64::crearMemoria(const OperandoMemoriaAArch64& opMemoria) {

@@ -46,22 +46,22 @@ void probarRegistrosDesconocidos() {
 
     GestorDiagnosticos gestor;
     // 'eax' no es de 64 bits en nuestro subconjunto
-    Instruccion instReg32 = AnalizadorSintactico::analizarTexto("mov eax, 10", 1);
-    bool res = Validador::validarInstruccion(instReg32, gestor);
+    Instruccion instruccionReg32 = AnalizadorSintactico::analizarTexto("mov eax, 10", 1);
+    bool resultado = Validador::validarInstruccion(instruccionReg32, gestor);
 
-    assert(res == false);
+    assert(resultado == false);
     assert(gestor.tieneErrores());
     assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
 
     // Fuente con registro no soportado
     GestorDiagnosticos gestor2;
-    Instruccion instFuenteInvalida = AnalizadorSintactico::analizarTexto("add rax, r99", 2);
-    assert(Validador::validarInstruccion(instFuenteInvalida, gestor2) == false);
+    Instruccion instruccionFuenteInvalida = AnalizadorSintactico::analizarTexto("add rax, r99", 2);
+    assert(Validador::validarInstruccion(instruccionFuenteInvalida, gestor2) == false);
 
     // cmp con subregistro
     GestorDiagnosticos gestorCmp;
-    Instruccion instCmp32 = AnalizadorSintactico::analizarTexto("cmp eax, 0", 3);
-    assert(Validador::validarInstruccion(instCmp32, gestorCmp) == false);
+    Instruccion instruccionCmp32 = AnalizadorSintactico::analizarTexto("cmp eax, 0", 3);
+    assert(Validador::validarInstruccion(instruccionCmp32, gestorCmp) == false);
     assert(gestorCmp.obtenerTodos()[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
 
     std::cout << "  -> Exito en rechazo de registros desconocidos.\n";
@@ -72,29 +72,29 @@ void probarOperandosInvertidos() {
 
     GestorDiagnosticos gestor;
     // Constante como primer operando (destino inmediato)
-    Instruccion instInvertida = AnalizadorSintactico::analizarTexto("mov 42, rax", 3);
-    bool res = Validador::validarInstruccion(instInvertida, gestor);
+    Instruccion instruccionInvertida = AnalizadorSintactico::analizarTexto("mov 42, rax", 3);
+    bool resultado = Validador::validarInstruccion(instruccionInvertida, gestor);
 
-    assert(res == false);
+    assert(resultado == false);
     assert(gestor.tieneErrores());
     assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // Destino inmediato en operacion logica
     GestorDiagnosticos gestorXor;
-    Instruccion instXorInvertida = AnalizadorSintactico::analizarTexto("xor 42, rax", 4);
-    assert(Validador::validarInstruccion(instXorInvertida, gestorXor) == false);
+    Instruccion instruccionXorInvertida = AnalizadorSintactico::analizarTexto("xor 42, rax", 4);
+    assert(Validador::validarInstruccion(instruccionXorInvertida, gestorXor) == false);
     assert(gestorXor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // Primer operando inmediato en cmp
     GestorDiagnosticos gestorCmp;
-    Instruccion instCmpInvertida = AnalizadorSintactico::analizarTexto("cmp 10, rax", 5);
-    assert(Validador::validarInstruccion(instCmpInvertida, gestorCmp) == false);
+    Instruccion instruccionCmpInvertida = AnalizadorSintactico::analizarTexto("cmp 10, rax", 5);
+    assert(Validador::validarInstruccion(instruccionCmpInvertida, gestorCmp) == false);
     assert(gestorCmp.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // Salto con operando numerico inmediato en vez de etiqueta
     GestorDiagnosticos gestorJmp;
-    Instruccion instJmpImm = AnalizadorSintactico::analizarTexto("jmp 42", 6);
-    assert(Validador::validarInstruccion(instJmpImm, gestorJmp) == false);
+    Instruccion instruccionJmpImm = AnalizadorSintactico::analizarTexto("jmp 42", 6);
+    assert(Validador::validarInstruccion(instruccionJmpImm, gestorJmp) == false);
     assert(gestorJmp.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     std::cout << "  -> Exito en rechazo de operandos invertidos e invalidos.\n";
@@ -105,26 +105,26 @@ void probarExcesoOperandos() {
 
     // 1. Tres operandos en add
     GestorDiagnosticos gestor1;
-    Instruccion instTresOps = AnalizadorSintactico::analizarTexto("add rax, rbx, rcx", 4);
-    assert(Validador::validarInstruccion(instTresOps, gestor1) == false);
+    Instruccion instruccionTresOps = AnalizadorSintactico::analizarTexto("add rax, rbx, rcx", 4);
+    assert(Validador::validarInstruccion(instruccionTresOps, gestor1) == false);
     assert(gestor1.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
 
     // 2. Operando en ret
     GestorDiagnosticos gestor2;
-    Instruccion instRetConOp = AnalizadorSintactico::analizarTexto("ret rax", 5);
-    assert(Validador::validarInstruccion(instRetConOp, gestor2) == false);
+    Instruccion instruccionRetConOp = AnalizadorSintactico::analizarTexto("ret rax", 5);
+    assert(Validador::validarInstruccion(instruccionRetConOp, gestor2) == false);
     assert(gestor2.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
 
     // 3. Tres operandos en cmp
     GestorDiagnosticos gestor3;
-    Instruccion instCmpTres = AnalizadorSintactico::analizarTexto("cmp rax, rbx, 5", 6);
-    assert(Validador::validarInstruccion(instCmpTres, gestor3) == false);
+    Instruccion instruccionCmpTres = AnalizadorSintactico::analizarTexto("cmp rax, rbx, 5", 6);
+    assert(Validador::validarInstruccion(instruccionCmpTres, gestor3) == false);
     assert(gestor3.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
 
     // 4. Dos operandos en jmp
     GestorDiagnosticos gestor4;
-    Instruccion instJmpDos = AnalizadorSintactico::analizarTexto("jmp fin, rax", 7);
-    assert(Validador::validarInstruccion(instJmpDos, gestor4) == false);
+    Instruccion instruccionJmpDos = AnalizadorSintactico::analizarTexto("jmp fin, rax", 7);
+    assert(Validador::validarInstruccion(instruccionJmpDos, gestor4) == false);
     assert(gestor4.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
 
     std::cout << "  -> Exito en rechazo de exceso de operandos.\n";
@@ -134,20 +134,20 @@ void probarFaltaOperandos() {
     std::cout << "[Test Gate] Probando rechazo por falta de operandos (E023)...\n";
 
     GestorDiagnosticos gestor;
-    Instruccion instUnOp = AnalizadorSintactico::analizarTexto("mov rax", 6);
-    assert(Validador::validarInstruccion(instUnOp, gestor) == false);
+    Instruccion instruccionUnOp = AnalizadorSintactico::analizarTexto("mov rax", 6);
+    assert(Validador::validarInstruccion(instruccionUnOp, gestor) == false);
     assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
 
     // cmp sin segundo operando
     GestorDiagnosticos gestorCmp;
-    Instruccion instCmpUno = AnalizadorSintactico::analizarTexto("cmp rax", 7);
-    assert(Validador::validarInstruccion(instCmpUno, gestorCmp) == false);
+    Instruccion instruccionCmpUno = AnalizadorSintactico::analizarTexto("cmp rax", 7);
+    assert(Validador::validarInstruccion(instruccionCmpUno, gestorCmp) == false);
     assert(gestorCmp.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
 
     // jmp sin operando
     GestorDiagnosticos gestorJmp;
-    Instruccion instJmpCero = AnalizadorSintactico::analizarTexto("jmp", 8);
-    assert(Validador::validarInstruccion(instJmpCero, gestorJmp) == false);
+    Instruccion instruccionJmpCero = AnalizadorSintactico::analizarTexto("jmp", 8);
+    assert(Validador::validarInstruccion(instruccionJmpCero, gestorJmp) == false);
     assert(gestorJmp.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
 
     std::cout << "  -> Exito en rechazo por falta de operandos.\n";
@@ -157,8 +157,8 @@ void probarInstruccionDesconocida() {
     std::cout << "[Test Gate] Probando rechazo de instruccion desconocida (E001)...\n";
 
     GestorDiagnosticos gestor;
-    Instruccion instDesconocida = AnalizadorSintactico::analizarTexto("vmovaps ymm0, ymm1", 7);
-    assert(Validador::validarInstruccion(instDesconocida, gestor) == false);
+    Instruccion instruccionDesconocida = AnalizadorSintactico::analizarTexto("vmovaps ymm0, ymm1", 7);
+    assert(Validador::validarInstruccion(instruccionDesconocida, gestor) == false);
     assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kInstruccionDesconocida);
 
     std::cout << "  -> Exito en rechazo de instruccion desconocida.\n";
@@ -175,8 +175,8 @@ void probarEtiquetasNoDefinidas() {
         AnalizadorSintactico::analizarTexto("ret", 4)
     };
 
-    bool res = Validador::validarPrograma(programa, gestor);
-    assert(res == false);
+    bool resultado = Validador::validarPrograma(programa, gestor);
+    assert(resultado == false);
     assert(gestor.tieneErrores());
     assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kEtiquetaNoDefinida);
 
@@ -200,38 +200,46 @@ void probarMemoriaLocal() {
 
     // 2. Rechazo de memoria a memoria
     GestorDiagnosticos gestorMemMem;
-    Instruccion instMemMem = AnalizadorSintactico::analizarTexto("mov [rbp - 8], [rbp - 16]", 6);
-    assert(Validador::validarInstruccion(instMemMem, gestorMemMem) == false);
+    Instruccion instruccionMemMem = AnalizadorSintactico::analizarTexto("mov [rbp - 8], [rbp - 16]", 6);
+    assert(Validador::validarInstruccion(instruccionMemMem, gestorMemMem) == false);
     assert(gestorMemMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // 3. Rechazo de inmediato a memoria
     GestorDiagnosticos gestorMemImm;
-    Instruccion instMemImm = AnalizadorSintactico::analizarTexto("mov [rbp - 8], 42", 7);
-    assert(Validador::validarInstruccion(instMemImm, gestorMemImm) == false);
+    Instruccion instruccionMemImm = AnalizadorSintactico::analizarTexto("mov [rbp - 8], 42", 7);
+    assert(Validador::validarInstruccion(instruccionMemImm, gestorMemImm) == false);
     assert(gestorMemImm.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // 4. Rechazo de registro base de 32 bits (ebp)
     GestorDiagnosticos gestorBase32;
-    Instruccion instBase32 = AnalizadorSintactico::analizarTexto("mov rax, [ebp - 8]", 8);
-    assert(Validador::validarInstruccion(instBase32, gestorBase32) == false);
+    Instruccion instruccionBase32 = AnalizadorSintactico::analizarTexto("mov rax, [ebp - 8]", 8);
+    assert(Validador::validarInstruccion(instruccionBase32, gestorBase32) == false);
     assert(gestorBase32.obtenerTodos()[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
+    assert(gestorBase32.obtenerTodos()[0].formatear() ==
+           "linea 8: [E021] ERROR: registro base 'ebp' no soportado en modo solo 64 bits");
+
+    GestorDiagnosticos gestorDestino32;
+    Instruccion destino32 = AnalizadorSintactico::analizarTexto("mov [ebp], 42", 9);
+    assert(!Validador::validarInstruccion(destino32, gestorDestino32));
+    assert(gestorDestino32.obtenerTodos()[0].formatear() ==
+           "linea 9: [E021] ERROR: registro base 'ebp' no soportado en modo solo 64 bits");
 
     // 5. Rechazo de memoria en operacion aritmetica (add)
     GestorDiagnosticos gestorAddMem;
-    Instruccion instAddMem = AnalizadorSintactico::analizarTexto("add rax, [rbp - 8]", 9);
-    assert(Validador::validarInstruccion(instAddMem, gestorAddMem) == false);
+    Instruccion instruccionAddMem = AnalizadorSintactico::analizarTexto("add rax, [rbp - 8]", 9);
+    assert(Validador::validarInstruccion(instruccionAddMem, gestorAddMem) == false);
     assert(gestorAddMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // 6. Rechazo de memoria en operacion logica (xor)
     GestorDiagnosticos gestorXorMem;
-    Instruccion instXorMem = AnalizadorSintactico::analizarTexto("xor [rbp - 8], rax", 10);
-    assert(Validador::validarInstruccion(instXorMem, gestorXorMem) == false);
+    Instruccion instruccionXorMem = AnalizadorSintactico::analizarTexto("xor [rbp - 8], rax", 10);
+    assert(Validador::validarInstruccion(instruccionXorMem, gestorXorMem) == false);
     assert(gestorXorMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // 7. Rechazo de memoria en comparacion (cmp)
     GestorDiagnosticos gestorCmpMem;
-    Instruccion instCmpMem = AnalizadorSintactico::analizarTexto("cmp rax, [rbp - 8]", 11);
-    assert(Validador::validarInstruccion(instCmpMem, gestorCmpMem) == false);
+    Instruccion instruccionCmpMem = AnalizadorSintactico::analizarTexto("cmp rax, [rbp - 8]", 11);
+    assert(Validador::validarInstruccion(instruccionCmpMem, gestorCmpMem) == false);
     assert(gestorCmpMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     std::cout << "  -> Exito en validacion de memoria local.\n";
@@ -253,35 +261,35 @@ void probarInstruccionesStack() {
 
     // 2. Falta de operandos
     GestorDiagnosticos gestorFaltaPush, gestorFaltaPop;
-    Instruccion instPushVacia = AnalizadorSintactico::analizarTexto("push", 5);
-    Instruccion instPopVacia = AnalizadorSintactico::analizarTexto("pop", 6);
-    assert(Validador::validarInstruccion(instPushVacia, gestorFaltaPush) == false);
+    Instruccion instruccionPushVacia = AnalizadorSintactico::analizarTexto("push", 5);
+    Instruccion instruccionPopVacia = AnalizadorSintactico::analizarTexto("pop", 6);
+    assert(Validador::validarInstruccion(instruccionPushVacia, gestorFaltaPush) == false);
     assert(gestorFaltaPush.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
-    assert(Validador::validarInstruccion(instPopVacia, gestorFaltaPop) == false);
+    assert(Validador::validarInstruccion(instruccionPopVacia, gestorFaltaPop) == false);
     assert(gestorFaltaPop.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
 
     // 3. Exceso de operandos
     GestorDiagnosticos gestorExceso;
-    Instruccion instExceso = AnalizadorSintactico::analizarTexto("push rax, rbx", 7);
-    assert(Validador::validarInstruccion(instExceso, gestorExceso) == false);
+    Instruccion instruccionExceso = AnalizadorSintactico::analizarTexto("push rax, rbx", 7);
+    assert(Validador::validarInstruccion(instruccionExceso, gestorExceso) == false);
     assert(gestorExceso.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
 
     // 4. Inmediato no permitido en este subconjunto
     GestorDiagnosticos gestorImm;
-    Instruccion instPushImm = AnalizadorSintactico::analizarTexto("push 42", 8);
-    assert(Validador::validarInstruccion(instPushImm, gestorImm) == false);
+    Instruccion instruccionPushImm = AnalizadorSintactico::analizarTexto("push 42", 8);
+    assert(Validador::validarInstruccion(instruccionPushImm, gestorImm) == false);
     assert(gestorImm.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // 5. Subregistros de 32 bits
     GestorDiagnosticos gestor32;
-    Instruccion instPush32 = AnalizadorSintactico::analizarTexto("push ebp", 9);
-    assert(Validador::validarInstruccion(instPush32, gestor32) == false);
+    Instruccion instruccionPush32 = AnalizadorSintactico::analizarTexto("push ebp", 9);
+    assert(Validador::validarInstruccion(instruccionPush32, gestor32) == false);
     assert(gestor32.obtenerTodos()[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
 
     // 6. Memoria no permitida en push/pop
     GestorDiagnosticos gestorMem;
-    Instruccion instPushMem = AnalizadorSintactico::analizarTexto("push [rbp - 8]", 10);
-    assert(Validador::validarInstruccion(instPushMem, gestorMem) == false);
+    Instruccion instruccionPushMem = AnalizadorSintactico::analizarTexto("push [rbp - 8]", 10);
+    assert(Validador::validarInstruccion(instruccionPushMem, gestorMem) == false);
     assert(gestorMem.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     std::cout << "  -> Exito en validacion de push y pop.\n";
@@ -304,25 +312,25 @@ void probarValidacionLlamadas() {
 
     // 2. Falta de operando (call sin destino)
     GestorDiagnosticos gestorFalta;
-    Instruccion instCallVacia = AnalizadorSintactico::analizarTexto("call", 6);
-    assert(Validador::validarInstruccion(instCallVacia, gestorFalta) == false);
+    Instruccion instruccionCallVacia = AnalizadorSintactico::analizarTexto("call", 6);
+    assert(Validador::validarInstruccion(instruccionCallVacia, gestorFalta) == false);
     assert(gestorFalta.obtenerTodos()[0].codigo == CodigosDiagnostico::kFaltanOperandos);
 
     // 3. Exceso de operandos (call con mas de una etiqueta)
     GestorDiagnosticos gestorExceso;
-    Instruccion instCallExceso = AnalizadorSintactico::analizarTexto("call f1, f2", 7);
-    assert(Validador::validarInstruccion(instCallExceso, gestorExceso) == false);
+    Instruccion instruccionCallExceso = AnalizadorSintactico::analizarTexto("call f1, f2", 7);
+    assert(Validador::validarInstruccion(instruccionCallExceso, gestorExceso) == false);
     assert(gestorExceso.obtenerTodos()[0].codigo == CodigosDiagnostico::kExcesoOperandos);
 
     // 4. Operando de llamada no es etiqueta (inmediato o registro indirecto no soportado)
     GestorDiagnosticos gestorImm;
-    Instruccion instCallImm = AnalizadorSintactico::analizarTexto("call 42", 8);
-    assert(Validador::validarInstruccion(instCallImm, gestorImm) == false);
+    Instruccion instruccionCallImm = AnalizadorSintactico::analizarTexto("call 42", 8);
+    assert(Validador::validarInstruccion(instruccionCallImm, gestorImm) == false);
     assert(gestorImm.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     GestorDiagnosticos gestorReg;
-    Instruccion instCallReg = AnalizadorSintactico::analizarTexto("call rax", 9);
-    assert(Validador::validarInstruccion(instCallReg, gestorReg) == false);
+    Instruccion instruccionCallReg = AnalizadorSintactico::analizarTexto("call rax", 9);
+    assert(Validador::validarInstruccion(instruccionCallReg, gestorReg) == false);
     assert(gestorReg.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
 
     // 5. Etiqueta de llamada no definida en el programa

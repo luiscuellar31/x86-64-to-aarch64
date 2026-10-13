@@ -119,9 +119,10 @@ static std::string normalizarInstruccion(const std::string& textoInstruccion) {
 std::string Normalizador::normalizarLinea(const std::string& lineaCruda) {
     // Paso 1: Eliminar comentarios posteriores a ';'
     size_t posicionComentario = lineaCruda.find(';');
-    std::string sinComentarios = (posicionComentario != std::string::npos)
-                                     ? lineaCruda.substr(0, posicionComentario)
-                                     : lineaCruda;
+    std::string sinComentarios = lineaCruda;
+    if (posicionComentario != std::string::npos) {
+        sinComentarios = lineaCruda.substr(0, posicionComentario);
+    }
 
     // Paso 2: Recortar espacios en blanco
     std::string lineaLimpia = recortarEspacios(sinComentarios);

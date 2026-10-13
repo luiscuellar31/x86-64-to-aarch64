@@ -19,8 +19,8 @@ bool ResultadoTraduccion::esExitoso() const {
 }
 
 bool ResultadoTraduccion::tieneErrores() const {
-    for (const auto& diag : diagnosticos) {
-        if (diag.severidad == SeveridadDiagnostico::Error) {
+    for (const auto& diagnostico : diagnosticos) {
+        if (diagnostico.severidad == SeveridadDiagnostico::Error) {
             return true;
         }
     }
@@ -48,107 +48,113 @@ const MapeoTraduccion* ResultadoTraduccion::buscarMapeoPorLineaX86(int lineaX86)
 }
 
 std::string ResultadoTraduccion::resumenFormateado() const {
-    std::stringstream ss;
-    ss << "=== Resultado de Traduccion ===\n";
-    ss << "Estado: " << (esExitoso() ? "EXITOSO" : "CON ERRORES") << "\n\n";
+    std::stringstream flujoSalida;
+    flujoSalida << "=== Resultado de Traduccion ===\n";
+    flujoSalida << "Estado: ";
+    if (esExitoso()) {
+        flujoSalida << "EXITOSO";
+    } else {
+        flujoSalida << "CON ERRORES";
+    }
+    flujoSalida << "\n\n";
 
     if (!codigoGenerado.empty()) {
-        ss << "[Codigo AArch64 Generado]:\n" << codigoGenerado << "\n";
+        flujoSalida << "[Codigo AArch64 Generado]:\n" << codigoGenerado << "\n";
     }
 
     if (!mapeos.empty()) {
-        ss << "[Mapeos Didacticos (" << mapeos.size() << ")]:\n";
-        for (const auto& m : mapeos) {
-            ss << "  Linea x86 " << m.lineaOrigenX86 << " -> Regla [" << m.reglaId << "]: "
-               << m.explicacionCorta << "\n";
-            if (!m.codigoOrigen.empty() && !m.codigoDestino.empty()) {
-                ss << "    Origen:  \"" << m.codigoOrigen << "\"\n";
-                ss << "    Destino: \"" << m.codigoDestino << "\"\n";
+        flujoSalida << "[Mapeos Didacticos (" << mapeos.size() << ")]:\n";
+        for (const auto& mapeo : mapeos) {
+            flujoSalida << "  Linea x86 " << mapeo.lineaOrigenX86 << " -> Regla [" << mapeo.reglaId << "]: "
+               << mapeo.explicacionCorta << "\n";
+            if (!mapeo.codigoOrigen.empty() && !mapeo.codigoDestino.empty()) {
+                flujoSalida << "    Origen:  \"" << mapeo.codigoOrigen << "\"\n";
+                flujoSalida << "    Destino: \"" << mapeo.codigoDestino << "\"\n";
             }
         }
-        ss << "\n";
+        flujoSalida << "\n";
     }
 
     if (!diagnosticos.empty()) {
-        ss << "[Diagnosticos (" << diagnosticos.size() << ")]:\n";
-        for (const auto& diag : diagnosticos) {
-            ss << "  " << diag.formatear() << "\n";
+        flujoSalida << "[Diagnosticos (" << diagnosticos.size() << ")]:\n";
+        for (const auto& diagnostico : diagnosticos) {
+            flujoSalida << "  " << diagnostico.formatear() << "\n";
         }
     }
 
-    return ss.str();
+    return flujoSalida.str();
 }
 
 std::string ResultadoTraduccion::volcadoIR() const {
-    std::stringstream ss;
-    ss << "=== Volcado de Representacion Intermedia (IR) ===\n\n";
+    std::stringstream flujoSalida;
+    flujoSalida << "=== Volcado de Representacion Intermedia (IR) ===\n\n";
 
-    ss << "[IR x86-64 de Entrada (AST)]:\n";
+    flujoSalida << "[IR x86-64 de Entrada (AST)]:\n";
     if (irOrigen.empty()) {
-        ss << "  (sin instrucciones de entrada registradas)\n";
+        flujoSalida << "  (sin instrucciones de entrada registradas)\n";
     } else {
-        for (const auto& inst : irOrigen) {
-            ss << "  Linea " << inst.numeroLinea << ": ";
-            if (inst.esEtiquetaPura()) {
-                ss << "[ETIQUETA] " << inst.etiqueta << ":\n";
+        for (const auto& instruccionOrigen : irOrigen) {
+            flujoSalida << "  Linea " << instruccionOrigen.numeroLinea << ": ";
+            if (instruccionOrigen.esEtiquetaPura()) {
+                flujoSalida << "[ETIQUETA] " << instruccionOrigen.etiqueta << ":\n";
             } else {
-                ss << "[" << codigoOperacionATexto(inst.codigoOperacion) << "]";
-                if (inst.tieneEtiqueta()) {
-                    ss << " (Etiqueta: " << inst.etiqueta << ")";
+                flujoSalida << "[" << codigoOperacionATexto(instruccionOrigen.codigoOperacion) << "]";
+                if (instruccionOrigen.tieneEtiqueta()) {
+                    flujoSalida << " (Etiqueta: " << instruccionOrigen.etiqueta << ")";
                 }
-                if (!inst.operandos.empty()) {
-                    ss << " Operandos: ";
-                    for (size_t i = 0; i < inst.operandos.size(); ++i) {
-                        if (i > 0) {
-                            ss << ", ";
+                if (!instruccionOrigen.operandos.empty()) {
+                    flujoSalida << " Operandos: ";
+                    for (size_t indiceOperando = 0; indiceOperando < instruccionOrigen.operandos.size(); ++indiceOperando) {
+                        if (indiceOperando > 0) {
+                            flujoSalida << ", ";
                         }
-                        ss << "[" << tipoOperandoATexto(inst.operandos[i].tipo) << ": " << inst.operandos[i].valor << "]";
+                        flujoSalida << "[" << tipoOperandoATexto(instruccionOrigen.operandos[indiceOperando].tipo) << ": " << instruccionOrigen.operandos[indiceOperando].valor << "]";
                     }
                 }
-                ss << "\n";
+                flujoSalida << "\n";
             }
         }
     }
 
-    ss << "\n[IR AArch64 de Destino]:\n";
+    flujoSalida << "\n[IR AArch64 de Destino]:\n";
     if (irDestino.empty()) {
-        ss << "  (sin instrucciones de destino emitidas)\n";
+        flujoSalida << "  (sin instrucciones de destino emitidas)\n";
     } else {
-        for (const auto& aarchInst : irDestino) {
-            ss << "  Linea " << aarchInst.lineaOrigen << ": ";
-            if (aarchInst.esEtiquetaPura()) {
-                ss << "[ETIQUETA] " << aarchInst.etiqueta << ":\n";
+        for (const auto& instruccionDestino : irDestino) {
+            flujoSalida << "  Linea " << instruccionDestino.lineaOrigen << ": ";
+            if (instruccionDestino.esEtiquetaPura()) {
+                flujoSalida << "[ETIQUETA] " << instruccionDestino.etiqueta << ":\n";
             } else {
-                ss << "[" << codigoOperacionAArch64ATexto(aarchInst.codigoOperacion) << "] "
-                   << aarchInst.emitirTexto();
-                if (!aarchInst.reglaId.empty()) {
-                    ss << " (Regla: " << aarchInst.reglaId << ")";
+                flujoSalida << "[" << codigoOperacionAArch64ATexto(instruccionDestino.codigoOperacion) << "] "
+                   << instruccionDestino.emitirTexto();
+                if (!instruccionDestino.reglaId.empty()) {
+                    flujoSalida << " (Regla: " << instruccionDestino.reglaId << ")";
                 }
-                ss << "\n";
+                flujoSalida << "\n";
             }
         }
     }
 
-    return ss.str();
+    return flujoSalida.str();
 }
 
 std::string ResultadoTraduccion::explicacionesFormateadas() const {
-    std::stringstream ss;
-    ss << "=== Explicaciones Didacticas de Traduccion ===\n";
+    std::stringstream flujoSalida;
+    flujoSalida << "=== Explicaciones Didacticas de Traduccion ===\n";
     if (mapeos.empty()) {
-        ss << "(No hay mapeos didacticos disponibles)\n";
-        return ss.str();
+        flujoSalida << "(No hay mapeos didacticos disponibles)\n";
+        return flujoSalida.str();
     }
 
-    for (const auto& m : mapeos) {
-        ss << "Linea x86 " << m.lineaOrigenX86 << " -> Regla [" << m.reglaId << "]: "
-           << m.explicacionCorta << "\n";
-        if (!m.codigoOrigen.empty() && !m.codigoDestino.empty()) {
-            ss << "  x86-64:  \"" << m.codigoOrigen << "\"\n";
-            ss << "  AArch64: \"" << m.codigoDestino << "\"\n";
+    for (const auto& mapeo : mapeos) {
+        flujoSalida << "Linea x86 " << mapeo.lineaOrigenX86 << " -> Regla [" << mapeo.reglaId << "]: "
+           << mapeo.explicacionCorta << "\n";
+        if (!mapeo.codigoOrigen.empty() && !mapeo.codigoDestino.empty()) {
+            flujoSalida << "  x86-64:  \"" << mapeo.codigoOrigen << "\"\n";
+            flujoSalida << "  AArch64: \"" << mapeo.codigoDestino << "\"\n";
         }
     }
 
-    return ss.str();
+    return flujoSalida.str();
 }
 

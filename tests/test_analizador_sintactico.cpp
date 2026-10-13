@@ -8,35 +8,35 @@ void probarAnalisisInstruccionesBasicas() {
     std::cout << "[Test] Probando analisis de instrucciones basicas (mov, add, sub, ret)...\n";
 
     // 1. add rax, 5
-    Instruccion instAdd = AnalizadorSintactico::analizarTexto("add rax, 5", 4);
-    assert(instAdd.codigoOperacion == CodigoOperacion::Add);
-    assert(instAdd.numeroLinea == 4);
-    assert(instAdd.operandos.size() == 2);
-    assert(instAdd.operandos[0].tipo == TipoOperando::Registro);
-    assert(instAdd.operandos[0].valor == "rax");
-    assert(instAdd.operandos[1].tipo == TipoOperando::Inmediato);
-    assert(instAdd.operandos[1].valor == "5");
+    Instruccion instruccionAdd = AnalizadorSintactico::analizarTexto("add rax, 5", 4);
+    assert(instruccionAdd.codigoOperacion == CodigoOperacion::Add);
+    assert(instruccionAdd.numeroLinea == 4);
+    assert(instruccionAdd.operandos.size() == 2);
+    assert(instruccionAdd.operandos[0].tipo == TipoOperando::Registro);
+    assert(instruccionAdd.operandos[0].valor == "rax");
+    assert(instruccionAdd.operandos[1].tipo == TipoOperando::Inmediato);
+    assert(instruccionAdd.operandos[1].valor == "5");
 
     // 2. mov rbx, rax
-    Instruccion instMov = AnalizadorSintactico::analizarTexto("MOV RBX, RAX", 5);
-    assert(instMov.codigoOperacion == CodigoOperacion::Mov);
-    assert(instMov.operandos.size() == 2);
-    assert(instMov.operandos[0].tipo == TipoOperando::Registro);
-    assert(instMov.operandos[0].valor == "rbx");
-    assert(instMov.operandos[1].tipo == TipoOperando::Registro);
-    assert(instMov.operandos[1].valor == "rax");
+    Instruccion instruccionMov = AnalizadorSintactico::analizarTexto("MOV RBX, RAX", 5);
+    assert(instruccionMov.codigoOperacion == CodigoOperacion::Mov);
+    assert(instruccionMov.operandos.size() == 2);
+    assert(instruccionMov.operandos[0].tipo == TipoOperando::Registro);
+    assert(instruccionMov.operandos[0].valor == "rbx");
+    assert(instruccionMov.operandos[1].tipo == TipoOperando::Registro);
+    assert(instruccionMov.operandos[1].valor == "rax");
 
     // 3. sub rax, 0x10
-    Instruccion instSub = AnalizadorSintactico::analizarTexto("sub rax, 0x10", 6);
-    assert(instSub.codigoOperacion == CodigoOperacion::Sub);
-    assert(instSub.operandos.size() == 2);
-    assert(instSub.operandos[1].tipo == TipoOperando::Inmediato);
-    assert(instSub.operandos[1].valor == "0x10");
+    Instruccion instruccionSub = AnalizadorSintactico::analizarTexto("sub rax, 0x10", 6);
+    assert(instruccionSub.codigoOperacion == CodigoOperacion::Sub);
+    assert(instruccionSub.operandos.size() == 2);
+    assert(instruccionSub.operandos[1].tipo == TipoOperando::Inmediato);
+    assert(instruccionSub.operandos[1].valor == "0x10");
 
     // 4. ret
-    Instruccion instRet = AnalizadorSintactico::analizarTexto("  RET  ", 7);
-    assert(instRet.codigoOperacion == CodigoOperacion::Ret);
-    assert(instRet.operandos.empty());
+    Instruccion instruccionRet = AnalizadorSintactico::analizarTexto("  RET  ", 7);
+    assert(instruccionRet.codigoOperacion == CodigoOperacion::Ret);
+    assert(instruccionRet.operandos.empty());
 
     std::cout << "  -> Exito en analisis de instrucciones basicas.\n";
 }
@@ -45,19 +45,19 @@ void probarAnalisisEtiquetas() {
     std::cout << "[Test] Probando analisis de etiquetas y combinaciones...\n";
 
     // 1. Etiqueta pura
-    Instruccion instEtiqueta = AnalizadorSintactico::analizarTexto("inicio:", 1);
-    assert(instEtiqueta.tieneEtiqueta());
-    assert(instEtiqueta.esEtiquetaPura());
-    assert(instEtiqueta.etiqueta == "inicio");
+    Instruccion instruccionEtiqueta = AnalizadorSintactico::analizarTexto("inicio:", 1);
+    assert(instruccionEtiqueta.tieneEtiqueta());
+    assert(instruccionEtiqueta.esEtiquetaPura());
+    assert(instruccionEtiqueta.etiqueta == "inicio");
 
     // 2. Etiqueta con instruccion acompañante
-    Instruccion instCombinada = AnalizadorSintactico::analizarTexto("bucle: ADD RAX, 1", 10);
-    assert(instCombinada.tieneEtiqueta());
-    assert(instCombinada.etiqueta == "bucle");
-    assert(instCombinada.codigoOperacion == CodigoOperacion::Add);
-    assert(instCombinada.operandos.size() == 2);
-    assert(instCombinada.operandos[0].valor == "rax");
-    assert(instCombinada.operandos[1].valor == "1");
+    Instruccion instruccionCombinada = AnalizadorSintactico::analizarTexto("bucle: ADD RAX, 1", 10);
+    assert(instruccionCombinada.tieneEtiqueta());
+    assert(instruccionCombinada.etiqueta == "bucle");
+    assert(instruccionCombinada.codigoOperacion == CodigoOperacion::Add);
+    assert(instruccionCombinada.operandos.size() == 2);
+    assert(instruccionCombinada.operandos[0].valor == "rax");
+    assert(instruccionCombinada.operandos[1].valor == "1");
 
     std::cout << "  -> Exito en analisis de etiquetas.\n";
 }
@@ -95,38 +95,38 @@ void probarAnalisisOperandosMemoria() {
     std::cout << "[Test] Probando analisis de operandos de memoria estructurados...\n";
 
     // 1. mov rax, [rbp - 8]
-    Instruccion instLoad = AnalizadorSintactico::analizarTexto("mov rax, [rbp - 8]", 1);
-    assert(instLoad.codigoOperacion == CodigoOperacion::Mov);
-    assert(instLoad.operandos.size() == 2);
-    assert(instLoad.operandos[0].esRegistro() && instLoad.operandos[0].valor == "rax");
-    assert(instLoad.operandos[1].esMemoria());
-    assert(instLoad.operandos[1].memoria.registroBase == "rbp");
-    assert(instLoad.operandos[1].memoria.desplazamiento == -8);
-    assert(instLoad.operandos[1].memoria.anchoBits == 64);
+    Instruccion instruccionLoad = AnalizadorSintactico::analizarTexto("mov rax, [rbp - 8]", 1);
+    assert(instruccionLoad.codigoOperacion == CodigoOperacion::Mov);
+    assert(instruccionLoad.operandos.size() == 2);
+    assert(instruccionLoad.operandos[0].esRegistro() && instruccionLoad.operandos[0].valor == "rax");
+    assert(instruccionLoad.operandos[1].esMemoria());
+    assert(instruccionLoad.operandos[1].memoria.registroBase == "rbp");
+    assert(instruccionLoad.operandos[1].memoria.desplazamiento == -8);
+    assert(instruccionLoad.operandos[1].memoria.anchoBits == 64);
 
     // 2. mov [rbp - 16], rbx
-    Instruccion instStore = AnalizadorSintactico::analizarTexto("mov [rbp - 16], rbx", 2);
-    assert(instStore.codigoOperacion == CodigoOperacion::Mov);
-    assert(instStore.operandos.size() == 2);
-    assert(instStore.operandos[0].esMemoria());
-    assert(instStore.operandos[0].memoria.registroBase == "rbp");
-    assert(instStore.operandos[0].memoria.desplazamiento == -16);
-    assert(instStore.operandos[1].esRegistro() && instStore.operandos[1].valor == "rbx");
+    Instruccion instruccionStore = AnalizadorSintactico::analizarTexto("mov [rbp - 16], rbx", 2);
+    assert(instruccionStore.codigoOperacion == CodigoOperacion::Mov);
+    assert(instruccionStore.operandos.size() == 2);
+    assert(instruccionStore.operandos[0].esMemoria());
+    assert(instruccionStore.operandos[0].memoria.registroBase == "rbp");
+    assert(instruccionStore.operandos[0].memoria.desplazamiento == -16);
+    assert(instruccionStore.operandos[1].esRegistro() && instruccionStore.operandos[1].valor == "rbx");
 
     // 3. mov rax, [rbp + 32]
-    Instruccion instPositivo = AnalizadorSintactico::analizarTexto("mov rax, [rbp + 32]", 3);
-    assert(instPositivo.operandos[1].esMemoria());
-    assert(instPositivo.operandos[1].memoria.desplazamiento == 32);
+    Instruccion instruccionPositivo = AnalizadorSintactico::analizarTexto("mov rax, [rbp + 32]", 3);
+    assert(instruccionPositivo.operandos[1].esMemoria());
+    assert(instruccionPositivo.operandos[1].memoria.desplazamiento == 32);
 
     // 4. mov rax, [rbp] (desplazamiento cero)
-    Instruccion instCero = AnalizadorSintactico::analizarTexto("mov rax, [rbp]", 4);
-    assert(instCero.operandos[1].esMemoria());
-    assert(instCero.operandos[1].memoria.desplazamiento == 0);
+    Instruccion instruccionCero = AnalizadorSintactico::analizarTexto("mov rax, [rbp]", 4);
+    assert(instruccionCero.operandos[1].esMemoria());
+    assert(instruccionCero.operandos[1].memoria.desplazamiento == 0);
 
     // 5. mov rax, [rbp-8] (sin espacios)
-    Instruccion instCompacto = AnalizadorSintactico::analizarTexto("mov rax, [rbp-8]", 5);
-    assert(instCompacto.operandos[1].esMemoria());
-    assert(instCompacto.operandos[1].memoria.desplazamiento == -8);
+    Instruccion instruccionCompacto = AnalizadorSintactico::analizarTexto("mov rax, [rbp-8]", 5);
+    assert(instruccionCompacto.operandos[1].esMemoria());
+    assert(instruccionCompacto.operandos[1].memoria.desplazamiento == -8);
 
     // 6. clasificarOperando individual
     Operando opMem = AnalizadorSintactico::clasificarOperando("[rbp - 24]");
@@ -141,29 +141,29 @@ void probarAnalisisStack() {
     std::cout << "[Test] Probando analisis de instrucciones de stack (push, pop)...\n";
 
     // 1. push rbp
-    Instruccion instPush = AnalizadorSintactico::analizarTexto("push rbp", 1);
-    assert(instPush.codigoOperacion == CodigoOperacion::Push);
-    assert(instPush.esStack());
-    assert(instPush.operandos.size() == 1);
-    assert(instPush.operandos[0].esRegistro());
-    assert(instPush.operandos[0].valor == "rbp");
+    Instruccion instruccionPush = AnalizadorSintactico::analizarTexto("push rbp", 1);
+    assert(instruccionPush.codigoOperacion == CodigoOperacion::Push);
+    assert(instruccionPush.esStack());
+    assert(instruccionPush.operandos.size() == 1);
+    assert(instruccionPush.operandos[0].esRegistro());
+    assert(instruccionPush.operandos[0].valor == "rbp");
 
     // 2. pop rbp
-    Instruccion instPop = AnalizadorSintactico::analizarTexto("pop rbp", 2);
-    assert(instPop.codigoOperacion == CodigoOperacion::Pop);
-    assert(instPop.esStack());
-    assert(instPop.operandos.size() == 1);
-    assert(instPop.operandos[0].esRegistro());
-    assert(instPop.operandos[0].valor == "rbp");
+    Instruccion instruccionPop = AnalizadorSintactico::analizarTexto("pop rbp", 2);
+    assert(instruccionPop.codigoOperacion == CodigoOperacion::Pop);
+    assert(instruccionPop.esStack());
+    assert(instruccionPop.operandos.size() == 1);
+    assert(instruccionPop.operandos[0].esRegistro());
+    assert(instruccionPop.operandos[0].valor == "rbp");
 
     // 3. push rbx y pop rbx
-    Instruccion instPushRbx = AnalizadorSintactico::analizarTexto("push rbx", 3);
-    assert(instPushRbx.codigoOperacion == CodigoOperacion::Push);
-    assert(instPushRbx.operandos[0].valor == "rbx");
+    Instruccion instruccionPushRbx = AnalizadorSintactico::analizarTexto("push rbx", 3);
+    assert(instruccionPushRbx.codigoOperacion == CodigoOperacion::Push);
+    assert(instruccionPushRbx.operandos[0].valor == "rbx");
 
-    Instruccion instPopRbx = AnalizadorSintactico::analizarTexto("pop rbx", 4);
-    assert(instPopRbx.codigoOperacion == CodigoOperacion::Pop);
-    assert(instPopRbx.operandos[0].valor == "rbx");
+    Instruccion instruccionPopRbx = AnalizadorSintactico::analizarTexto("pop rbx", 4);
+    assert(instruccionPopRbx.codigoOperacion == CodigoOperacion::Pop);
+    assert(instruccionPopRbx.operandos[0].valor == "rbx");
 
     std::cout << "  -> Exito en analisis de push y pop.\n";
 }
@@ -171,12 +171,12 @@ void probarAnalisisStack() {
 void probarAnalisisLlamadas() {
     std::cout << "[Test] Probando analisis de instruccion call...\n";
 
-    Instruccion instCall = AnalizadorSintactico::analizarTexto("call calcular_suma", 1);
-    assert(instCall.codigoOperacion == CodigoOperacion::Call);
-    assert(instCall.esLlamada());
-    assert(instCall.operandos.size() == 1);
-    assert(instCall.operandos[0].esEtiqueta());
-    assert(instCall.operandos[0].valor == "calcular_suma");
+    Instruccion instruccionCall = AnalizadorSintactico::analizarTexto("call calcular_suma", 1);
+    assert(instruccionCall.codigoOperacion == CodigoOperacion::Call);
+    assert(instruccionCall.esLlamada());
+    assert(instruccionCall.operandos.size() == 1);
+    assert(instruccionCall.operandos[0].esEtiqueta());
+    assert(instruccionCall.operandos[0].valor == "calcular_suma");
 
     std::cout << "  -> Exito en analisis de call.\n";
 }
@@ -251,6 +251,36 @@ void probarLimitesNumericosYConsumoCompleto() {
     }
 }
 
+void probarAvanceDelIndiceDeMemoria() {
+    struct CasoMemoria {
+        std::string texto;
+        size_t indiceEsperado;
+        bool esValido;
+    };
+    const std::vector<CasoMemoria> casos = {
+        {"[rbp - 8], rax", 5, true},
+        {"[rbp-8], rax", 4, true},
+        {"[rbp 8], rax", 4, false},
+        {"[rbp + +8], rax", 5, false},
+        {"[rbp - 8", 4, false},
+        {"[], rax", 2, false}
+    };
+    for (const auto& caso : casos) {
+        std::vector<Token> tokens = AnalizadorLexico::tokenizarLinea(caso.texto, 5);
+        size_t indice = 0;
+        Operando operando = AnalizadorSintactico::analizarOperandoMemoria(tokens, indice);
+        assert(indice == caso.indiceEsperado);
+        assert(operando.esMemoria() == caso.esValido);
+    }
+
+    std::vector<Token> tokens = AnalizadorLexico::tokenizarPrograma("[rbp +\nret\n");
+    size_t indice = 0;
+    Operando invalido = AnalizadorSintactico::analizarOperandoMemoria(tokens, indice);
+    assert(invalido.tipo == TipoOperando::Desconocido);
+    assert(indice == 3);
+    assert(tokens[indice].es(TipoToken::FinDeLinea));
+}
+
 int main() {
     std::cout << "=== Pruebas unitarias de AnalizadorSintactico ===\n";
     probarAnalisisInstruccionesBasicas();
@@ -261,6 +291,7 @@ int main() {
     probarAnalisisLlamadas();
     probarRechazoSintaxisMalformada();
     probarLimitesNumericosYConsumoCompleto();
+    probarAvanceDelIndiceDeMemoria();
     std::cout << "Todas las pruebas del analizador sintactico pasaron con exito.\n";
     return 0;
 }

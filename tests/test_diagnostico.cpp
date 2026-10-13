@@ -6,22 +6,22 @@ void probarFormateoDiagnostico() {
     std::cout << "[Test] Probando creacion y formateo de Diagnostico...\n";
 
     // 1. Error con linea y columna
-    Diagnostico diagCol = Diagnostico::crearError(
+    Diagnostico diagnosticoConColumna = Diagnostico::crearError(
         CodigosDiagnostico::kInstruccionDesconocida, 4, "instruccion desconocida 'vmovaps'", 5);
 
-    assert(diagCol.severidad == SeveridadDiagnostico::Error);
-    assert(diagCol.codigo == "E001");
-    assert(diagCol.numeroLinea == 4);
-    assert(diagCol.numeroColumna == 5);
-    assert(diagCol.formatear() == "linea 4:5: [E001] ERROR: instruccion desconocida 'vmovaps'");
+    assert(diagnosticoConColumna.severidad == SeveridadDiagnostico::Error);
+    assert(diagnosticoConColumna.codigo == "E001");
+    assert(diagnosticoConColumna.numeroLinea == 4);
+    assert(diagnosticoConColumna.numeroColumna == 5);
+    assert(diagnosticoConColumna.formatear() == "linea 4:5: [E001] ERROR: instruccion desconocida 'vmovaps'");
 
     // 2. Advertencia sin columna
-    Diagnostico diagSinCol = Diagnostico::crearAdvertencia(
+    Diagnostico diagnosticoSinColumna = Diagnostico::crearAdvertencia(
         "W002", 10, "etiqueta declarada pero no utilizada");
 
-    assert(diagSinCol.severidad == SeveridadDiagnostico::Advertencia);
-    assert(diagSinCol.numeroColumna == 0);
-    assert(diagSinCol.formatear() == "linea 10: [W002] ADVERTENCIA: etiqueta declarada pero no utilizada");
+    assert(diagnosticoSinColumna.severidad == SeveridadDiagnostico::Advertencia);
+    assert(diagnosticoSinColumna.numeroColumna == 0);
+    assert(diagnosticoSinColumna.formatear() == "linea 10: [W002] ADVERTENCIA: etiqueta declarada pero no utilizada");
 
     std::cout << "  -> Exito en formateo de diagnosticos.\n";
 }
