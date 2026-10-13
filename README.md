@@ -131,6 +131,10 @@ El ensamblado comprueba la sintaxis y codificación de los ejemplos del corpus. 
 
 En macOS arm64 se añade una prueba nativa de retornos sucesivos y llamadas anidadas, con tiempo límite. Usa el compilador configurado y el ejemplo `09_llamadas_anidadas.s`; no requiere emulador ni dependencias nuevas.
 
+En ese host, si también se pueden compilar y ejecutar binarios x86-64 mediante Rosetta, se comparan las funciones de `tests/funcionales/` con sus traducciones AArch64. Un arnés común utiliza 16 pares de enteros de 64 bits, incluidos extremos, y repite cada evaluación tres veces. Los casos cubren aritmética, lógica, comparación con signo, un bucle acotado, memoria local y llamadas internas. La adaptación de los dos argumentos pertenece al arnés de pruebas; no amplía la ABI del traductor. CMake comprueba la disponibilidad y las ejecuciones tienen tiempo límite.
+
+Estas comparaciones verifican los casos y entradas indicados; los controles generales de flags, distribución de pila y codificación de operandos siguen pendientes.
+
 ### Uso de la herramienta CLI
 
 ```bash

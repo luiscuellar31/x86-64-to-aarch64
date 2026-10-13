@@ -142,6 +142,49 @@ if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$" AND NOT CMAKE_CR
         -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/verificar_llamadas_nativas.cmake"
     )
     set_tests_properties(TestLlamadasNativas PROPERTIES TIMEOUT 20)
+
+    set(carpetaReferencia "${CMAKE_CURRENT_BINARY_DIR}/comprobar_ejecucion_x86")
+    file(MAKE_DIRECTORY "${carpetaReferencia}")
+    file(WRITE "${carpetaReferencia}/comprobar.cpp" "int main() { return 0; }\n")
+    execute_process(
+        COMMAND "${CMAKE_CXX_COMPILER}" -std=c++17 -arch x86_64
+            "${carpetaReferencia}/comprobar.cpp" -o "${carpetaReferencia}/comprobar"
+        RESULT_VARIABLE resultadoCompilacionX86
+        ERROR_VARIABLE errorCompilacionX86
+        TIMEOUT 10
+    )
+    if(resultadoCompilacionX86 STREQUAL "0")
+        execute_process(
+            COMMAND "${carpetaReferencia}/comprobar"
+            RESULT_VARIABLE resultadoEjecucionX86
+            ERROR_VARIABLE errorEjecucionX86
+            TIMEOUT 5
+        )
+        if(resultadoEjecucionX86 STREQUAL "0")
+            file(GLOB ejemplosFuncionales CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/funcionales/*.s")
+            if(NOT ejemplosFuncionales)
+                message(FATAL_ERROR "No se encontraron funciones para comparar x86-64 y AArch64.")
+            endif()
+            foreach(archivoFuncion IN LISTS ejemplosFuncionales)
+                get_filename_component(nombreFuncion "${archivoFuncion}" NAME_WE)
+                set(nombrePrueba "TestFuncional_${nombreFuncion}")
+                add_test(NAME "${nombrePrueba}" COMMAND ${CMAKE_COMMAND}
+                    "-DTRADUCTOR=$<TARGET_FILE:x86_64_to_aarch64>"
+                    "-DENTRADA=${archivoFuncion}"
+                    "-DCOMPILADOR=${CMAKE_CXX_COMPILER}"
+                    "-DPROGRAMA_PRUEBA=${CMAKE_CURRENT_SOURCE_DIR}/tests/comparar_funciones.cpp"
+                    "-DCARPETA_PRUEBA=${CMAKE_CURRENT_BINARY_DIR}/pruebas_funcionales/${nombreFuncion}"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/verificar_funciones.cmake"
+                )
+                set_tests_properties("${nombrePrueba}" PROPERTIES TIMEOUT 40)
+            endforeach()
+            message(STATUS "Comparación funcional x86-64/AArch64 disponible en este host.")
+        else()
+            message(STATUS "Ejecución x86-64 no disponible: ${resultadoEjecucionX86} ${errorEjecucionX86}")
+        endif()
+    else()
+        message(STATUS "Compilación x86-64 no disponible: ${resultadoCompilacionX86} ${errorCompilacionX86}")
+    endif()
 endif()
 
 # Las comprobaciones con assert deben ejecutarse tambien en Release.
