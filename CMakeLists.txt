@@ -188,15 +188,31 @@ if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$" AND NOT CMAKE_CR
 endif()
 
 # Las comprobaciones con assert deben ejecutarse tambien en Release.
-foreach(objetivoPrueba IN ITEMS
+set(objetivosPrueba
     test_normalizador test_analizador_lexico test_analizador_sintactico
     test_ir test_diagnostico test_resultado_traduccion test_validador
     test_traductor test_cli
 )
+foreach(objetivoPrueba IN LISTS objetivosPrueba)
     if(MSVC)
         target_compile_options(${objetivoPrueba} PRIVATE /UNDEBUG)
     else()
         target_compile_options(${objetivoPrueba} PRIVATE -UNDEBUG)
     endif()
 endforeach()
+
+add_executable(medir_corpus EXCLUDE_FROM_ALL tests/medir_corpus.cpp)
+target_link_libraries(medir_corpus PRIVATE traductor_nucleo)
+
+add_custom_target(metricas
+    COMMAND ${CMAKE_COMMAND}
+        "-DMEDIDOR=$<TARGET_FILE:medir_corpus>"
+        "-DCTEST=${CMAKE_CTEST_COMMAND}"
+        "-DRAIZ_PROYECTO=${CMAKE_CURRENT_SOURCE_DIR}"
+        "-DCARPETA_BUILD=${CMAKE_CURRENT_BINARY_DIR}"
+        "-DCONFIGURACION=$<CONFIG>"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/registrar_metricas.cmake"
+    DEPENDS medir_corpus x86_64_to_aarch64 ${objetivosPrueba}
+    USES_TERMINAL
+)
 

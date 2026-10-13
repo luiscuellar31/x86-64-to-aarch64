@@ -135,6 +135,15 @@ En ese host, si también se pueden compilar y ejecutar binarios x86-64 mediante 
 
 Estas comparaciones verifican los casos y entradas indicados; los controles generales de flags, distribución de pila y codificación de operandos siguen pendientes.
 
+### Registro de métricas
+
+```bash
+cmake -S . -B build
+cmake --build build --target metricas
+```
+
+Este objetivo construye los ejecutables necesarios, mide los programas del corpus y ejecuta las pruebas configuradas. Guarda `CORPUS.md`, `pruebas.xml` (JUnit) y `pruebas.log` dentro de `build/metricas/`. El informe del corpus cuenta instrucciones del AST y de la IR AArch64, excluyendo etiquetas, y conserva los diagnósticos con sus líneas. Si una clasificación del corpus cambia o falla una prueba, el objetivo termina con error. Consulta [METRICAS.md](docs/METRICAS.md) para las definiciones, la medición de referencia y las restricciones semánticas.
+
 ### Uso de la herramienta CLI
 
 ```bash
