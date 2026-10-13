@@ -17,13 +17,27 @@ static bool validarRegistro64(const std::string& nombreRegistro, const std::stri
     return true;
 }
 
-static bool validarBaseMemoria(const OperandoMemoria& memoria, int numeroLinea, GestorDiagnosticos& gestor) {
+static bool validarMemoriaLocal(const OperandoMemoria& memoria, int numeroLinea, GestorDiagnosticos& gestor) {
     if (esSubregistroX86(memoria.registroBase)) {
         gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, numeroLinea,
                             "registro base '" + memoria.registroBase + "' no soportado en modo solo 64 bits");
         return false;
     }
-    return validarRegistro64(memoria.registroBase, "el registro base", numeroLinea, gestor);
+    if (!validarRegistro64(memoria.registroBase, "el registro base", numeroLinea, gestor)) {
+        return false;
+    }
+    std::string registroBase = normalizarNombreRegistro(memoria.registroBase);
+    if (registroBase != "rbp" && registroBase != "rsp") {
+        gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, numeroLinea,
+                            "la memoria local solo admite rbp o rsp como registro base");
+        return false;
+    }
+    if (memoria.anchoBits != 64) {
+        gestor.agregarError(CodigosDiagnostico::kFormaOperandoNoSoportada, numeroLinea,
+                            "los accesos a memoria local solo admiten un ancho de 64 bits");
+        return false;
+    }
+    return true;
 }
 
 static bool validarEtiqueta(const Instruccion& instruccion, GestorDiagnosticos& gestor) {
@@ -113,7 +127,7 @@ static bool validarDestinoMovimiento(const Operando& destino, int numeroLinea, G
         return validarRegistro64(destino.valor, "el registro destino", numeroLinea, gestor);
     }
     if (destino.esMemoria()) {
-        return validarBaseMemoria(destino.memoria, numeroLinea, gestor);
+        return validarMemoriaLocal(destino.memoria, numeroLinea, gestor);
     }
     if (esSubregistroX86(destino.valor)) {
         gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, numeroLinea,
@@ -144,7 +158,7 @@ static bool validarFuenteMovimiento(const Operando& fuente, const Operando& dest
                                 "no se admite transferencia directa de memoria a memoria en mov");
             return false;
         }
-        return validarBaseMemoria(fuente.memoria, numeroLinea, gestor);
+        return validarMemoriaLocal(fuente.memoria, numeroLinea, gestor);
     }
     if (esSubregistroX86(fuente.valor)) {
         gestor.agregarError(CodigosDiagnostico::kRegistroNoSoportado64Bit, numeroLinea,

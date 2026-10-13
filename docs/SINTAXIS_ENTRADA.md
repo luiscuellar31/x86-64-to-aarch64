@@ -58,6 +58,7 @@ bucle: add rax, 1
 - **Formato soportado:** Acceso a variables locales y marco de pila mediante direccionamiento base y desplazamiento constante: `[base]`, `[base - imm]`, `[base + imm]`.
 - **Registros base admitidos:** Registros de puntero de 64 bits (`rbp`, `rsp`).
 - **Ancho de palabra:** Accesos estándar de 64 bits hacia/desde registros enteros.
+- Las bases generales como `rax` o `rdi` y los anchos distintos de 64 bits se rechazan con `E014`. El ancho también se comprueba para instrucciones construidas mediante la biblioteca.
 - **Instrucción admitida:** Exclusivamente en `mov`:
   - Carga (*load*): `mov reg, [rbp - imm]` → `ldr reg, [x29, #-imm]`
   - Almacenamiento (*store*): `mov [rbp - imm], reg` → `str reg, [x29, #-imm]`

@@ -2,6 +2,7 @@
 #include <cassert>
 #include "validador.hpp"
 #include "analizador_sintactico.hpp"
+#include "traductor.hpp"
 
 void probarCasosValidos() {
     std::cout << "[Test Gate] Probando instrucciones validas...\n";
@@ -346,6 +347,69 @@ void probarValidacionLlamadas() {
     std::cout << "  -> Exito en validacion de call.\n";
 }
 
+void probarBasesDeMemoriaFueraDelSubconjunto() {
+    const std::vector<std::string> casos = {
+        "mov rax, [rax + 8]", "mov [rdi], rax", "mov rax, [r15]"
+    };
+    for (const auto& texto : casos) {
+        Instruccion instruccion = AnalizadorSintactico::analizarTexto(texto, 3);
+        assert(!instruccion.errorSintactico.has_value());
+        GestorDiagnosticos gestor;
+        assert(!Validador::validarInstruccion(instruccion, gestor));
+        assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+        assert(gestor.obtenerTodos()[0].numeroLinea == 3);
+
+        ResultadoTraduccion resultado = Traductor::traducir("; cabecera\n\n" + texto);
+        assert(!resultado.esExitoso());
+        assert(resultado.codigoGenerado.empty());
+        assert(resultado.irDestino.empty());
+        assert(resultado.mapeos.empty());
+    }
+}
+
+void probarAnchoDeMemoriaEnLaBiblioteca() {
+    for (int anchoBits : {8, 16, 32, 128}) {
+        for (const auto& base : {"rbp", "rsp"}) {
+            Operando memoria = Operando::crearMemoria(base, -8, anchoBits);
+            Instruccion carga(CodigoOperacion::Mov, {Operando::crearRegistro("rax"), memoria}, 7);
+            Instruccion almacenamiento(CodigoOperacion::Mov, {memoria, Operando::crearRegistro("rax")}, 7);
+            for (const auto& instruccion : {carga, almacenamiento}) {
+                GestorDiagnosticos gestor;
+                assert(!Validador::validarInstruccion(instruccion, gestor));
+                assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kFormaOperandoNoSoportada);
+                ResultadoTraduccion resultado = Traductor::traducirInstrucciones({instruccion});
+                assert(!resultado.esExitoso());
+                assert(resultado.codigoGenerado.empty());
+                assert(resultado.irDestino.empty());
+                assert(resultado.mapeos.empty());
+            }
+        }
+    }
+
+    Instruccion carga(CodigoOperacion::Mov,
+        {Operando::crearRegistro("rax"), Operando::crearMemoria("RBP", -8, 64)}, 7);
+    GestorDiagnosticos gestor;
+    assert(Validador::validarInstruccion(carga, gestor));
+}
+
+void probarSubregistrosEnLasFormasSoportadas() {
+    const std::vector<std::string> subregistros = {"eax", "ax", "al", "ah", "r8d", "r8w", "r8b"};
+    for (const auto& mnemonico : {"mov", "add", "sub", "and", "or", "xor", "cmp"}) {
+        for (const auto& subregistro : subregistros) {
+            for (const auto& texto : {
+                    std::string(mnemonico) + " " + subregistro + ", 1",
+                    std::string(mnemonico) + " rax, " + subregistro}) {
+                GestorDiagnosticos gestor;
+                Instruccion instruccion = AnalizadorSintactico::analizarTexto(texto, 5);
+                assert(!instruccion.errorSintactico.has_value());
+                assert(!Validador::validarInstruccion(instruccion, gestor));
+                assert(gestor.obtenerTodos()[0].codigo == CodigosDiagnostico::kRegistroNoSoportado64Bit);
+                assert(gestor.obtenerTodos()[0].numeroLinea == 5);
+            }
+        }
+    }
+}
+
 int main() {
     std::cout << "=== Pruebas Gate del Validador Semantico ===\n";
     probarCasosValidos();
@@ -358,6 +422,9 @@ int main() {
     probarMemoriaLocal();
     probarInstruccionesStack();
     probarValidacionLlamadas();
+    probarBasesDeMemoriaFueraDelSubconjunto();
+    probarAnchoDeMemoriaEnLaBiblioteca();
+    probarSubregistrosEnLasFormasSoportadas();
     std::cout << "Todas las condiciones Gate del validador pasaron con exito.\n";
     return 0;
 }
