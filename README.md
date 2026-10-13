@@ -38,9 +38,11 @@ Emisión textual y generación de mapeos pedagógicos
 
 ## Estado actual
 
-El núcleo del traductor se encuentra desacoplado como la biblioteca estática `traductor_nucleo` (`libtraductor_nucleo.a`), consumida tanto por la interfaz de línea de comandos (CLI) como por la suite de pruebas automatizadas.
+El núcleo del traductor se encuentra desacoplado como la biblioteca estática `traductor_nucleo` (`libtraductor_nucleo.a`), consumida por la interfaz de línea de comandos (CLI), la interfaz gráfica opcional y las pruebas automatizadas.
 
 La CLI permite traducir archivos, guardar el resultado y consultar ayuda, versión, explicaciones y representaciones intermedias. El análisis sintáctico exige comas entre operandos, expresiones completas y literales numéricos dentro del rango de `int64_t`.
+
+La interfaz gráfica presenta la entrada x86-64 junto a la salida AArch64, con acciones para traducir, limpiar, cargar la entrada y guardar la salida. El panel inferior muestra las explicaciones y los diagnósticos del mismo núcleo.
 
 El validador comprueba registros y accesos a memoria de 64 bits, bases locales `rbp`/`rsp`, usos permitidos de `rsp` y etiquetas con una única definición. Las restricciones se detallan en [SINTAXIS_ENTRADA.md](docs/SINTAXIS_ENTRADA.md).
 
@@ -89,8 +91,9 @@ x86-64-to-aarch64/
 │   ├── diagnostico.hpp
 │   ├── resultado_traduccion.hpp
 │   └── opciones_cli.hpp
-├── src/                    # Implementación del núcleo y ejecutable CLI
+├── src/                    # Implementación del núcleo y sus interfaces
 │   ├── main.cpp            # Punto de entrada de la herramienta de línea de comandos
+│   ├── gui/                # Ventana y punto de entrada de la interfaz gráfica opcional
 │   └── ...                 # Módulos de implementación en C++17
 ├── tests/                  # Suites de pruebas unitarias y de integración (CTest)
 └── examples/               # Corpus de ejemplos en ensamblador
@@ -143,6 +146,27 @@ cmake --build build --target metricas
 ```
 
 Este objetivo construye los ejecutables necesarios, mide los programas del corpus y ejecuta las pruebas configuradas. Guarda `CORPUS.md`, `pruebas.xml` (JUnit) y `pruebas.log` dentro de `build/metricas/`. El informe del corpus cuenta instrucciones del AST y de la IR AArch64, excluyendo etiquetas, y conserva los diagnósticos con sus líneas. Si una clasificación del corpus cambia o falla una prueba, el objetivo termina con error. Consulta [METRICAS.md](docs/METRICAS.md) para las definiciones, la medición de referencia y las restricciones semánticas.
+
+### Interfaz gráfica opcional
+
+Requiere Qt 6 con el módulo Widgets. La construcción habitual del núcleo y la CLI continúa funcionando sin Qt. Para habilitar la ventana:
+
+```bash
+cmake -S . -B build-gui -DCMAKE_BUILD_TYPE=Debug -DCONSTRUIR_GUI=ON \
+  -DCMAKE_PREFIX_PATH="/ruta/al/directorio/de/Qt"
+cmake --build build-gui
+./build-gui/x86_64_to_aarch64_gui
+```
+
+`CMAKE_PREFIX_PATH` debe apuntar al directorio de la instalación que contiene `lib/cmake/Qt6/`; puede omitirse si CMake ya encuentra Qt. La construcción se verificó con Qt 6.11.2 y AppleClang 21 en macOS arm64. Qt debe ser compatible con el SDK instalado: en este entorno, Qt 6.8.3 falló al enlazar por una dependencia de AGL ausente del SDK.
+
+La entrada admite edición y carga de archivos UTF-8. **Traducir** llama a `Traductor::traducir`; la salida y el panel inferior son de sólo lectura. **Limpiar** vacía los paneles. **Guardar** escribe únicamente la salida actual mediante `QSaveFile`, que reemplaza el archivo al completar la escritura. Si falla la lectura, se conserva la entrada anterior; si cambia la entrada o se rechaza una traducción, se borra el resultado anterior y se deshabilita Guardar para evitar guardar una salida desactualizada.
+
+Cargar y Limpiar conservan el historial de deshacer del editor: se puede recuperar la entrada anterior con Deshacer. La recuperación vuelve a requerir una traducción para generar y guardar la salida correspondiente.
+
+La ventana muestra las restricciones conocidas de flags, pila e inmediatos. Produce ensamblador textual con el alcance descrito en [METRICAS.md](docs/METRICAS.md). Las explicaciones y los diagnósticos proceden del núcleo; la interfaz no contiene reglas de traducción.
+
+Con `CONSTRUIR_GUI=ON`, CTest añade `TestVentanaTraductor`, que comprueba los paneles, traducción, rechazo, invalidación de resultados, carga y guardado. Se ejecuta con `QT_QPA_PLATFORM=offscreen` y genera `ventana_traductor.png` en el directorio de construcción para revisar la distribución visual. Los diálogos nativos de selección de archivos requieren comprobación manual.
 
 ### Uso de la herramienta CLI
 

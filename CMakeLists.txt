@@ -193,6 +193,24 @@ set(objetivosPrueba
     test_ir test_diagnostico test_resultado_traduccion test_validador
     test_traductor test_cli
 )
+
+option(CONSTRUIR_GUI "Construir la interfaz gráfica con Qt Widgets" OFF)
+if(CONSTRUIR_GUI)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
+    add_executable(x86_64_to_aarch64_gui src/gui/main_gui.cpp src/gui/ventana_traductor.cpp)
+    target_include_directories(x86_64_to_aarch64_gui PRIVATE src/gui)
+    target_link_libraries(x86_64_to_aarch64_gui PRIVATE traductor_nucleo Qt6::Widgets)
+
+    add_executable(test_ventana_traductor tests/test_ventana_traductor.cpp src/gui/ventana_traductor.cpp)
+    target_include_directories(test_ventana_traductor PRIVATE src/gui)
+    target_link_libraries(test_ventana_traductor PRIVATE traductor_nucleo Qt6::Widgets)
+    add_test(NAME TestVentanaTraductor COMMAND test_ventana_traductor
+        "${CMAKE_CURRENT_BINARY_DIR}/ventana_traductor.png")
+    set_tests_properties(TestVentanaTraductor PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 15)
+    list(APPEND objetivosPrueba test_ventana_traductor)
+endif()
+
 foreach(objetivoPrueba IN LISTS objetivosPrueba)
     if(MSVC)
         target_compile_options(${objetivoPrueba} PRIVATE /UNDEBUG)

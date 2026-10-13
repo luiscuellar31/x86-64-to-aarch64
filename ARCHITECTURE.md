@@ -21,7 +21,9 @@ El procesamiento de una instrucción sigue una secuencia lineal y desacoplada:
 5. **Emisión de código y pedagogía:** Genera el ensamblador AArch64 final, vinculando mapeos didácticos deterministas y diagnósticos estructurados.
 6. **Despacho CLI y opciones:** El módulo `AnalizadorCLI` procesa los argumentos de ejecución (`--help`, `--version`, `--explain`, `--dump-ir`, `-o`), canalizando la salida a consola o archivos.
 
-Cada instrucción de origen conserva un único `MapeoTraduccion`, que registra todas sus líneas destino. Las etiquetas acompañantes se conservan en la primera instrucción de la secuencia. La IR destino y las explicaciones incluyen también las operaciones de preservación del enlace, de modo que CLI, futuras interfaces y pruebas consuman la misma transformación.
+Cada instrucción de origen conserva un único `MapeoTraduccion`, que registra todas sus líneas destino. Las etiquetas acompañantes se conservan en la primera instrucción de la secuencia. La IR destino y las explicaciones incluyen también las operaciones de preservación del enlace, de modo que CLI, interfaz gráfica y pruebas consuman la misma transformación.
+
+La ventana opcional `VentanaTraductor`, en `src/gui/`, usa Qt Widgets y llama directamente a `Traductor::traducir`. Muestra el código generado, las explicaciones formateadas y los diagnósticos de `ResultadoTraduccion`. Conserva la carga y el guardado en la interfaz, y descarta la salida anterior cuando cambia la entrada. Qt se enlaza únicamente con los ejecutables gráficos; `traductor_nucleo` permanece independiente de esa biblioteca.
 
 ---
 
@@ -30,6 +32,7 @@ Cada instrucción de origen conserva un único `MapeoTraduccion`, que registra t
 A medida que el proyecto avance, los archivos se organizan de la siguiente manera:
 
 - `src/`: Código fuente del núcleo del traductor y punto de entrada.
+- `src/gui/`: Ventana de doble panel y punto de entrada gráfico opcional.
 - `include/`: Encabezados públicos y definiciones de estructuras de datos.
 - `docs/`: Especificaciones técnicas (sintaxis permitida, tablas de registros y reglas por instrucción).
 - `examples/`: Archivos `.s` o `.asm` de prueba, divididos en casos válidos e inválidos.

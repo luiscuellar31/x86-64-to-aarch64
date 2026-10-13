@@ -21,6 +21,8 @@ El informe del corpus usa la biblioteca del traductor. Lee los archivos `.s` de 
 
 Las pruebas de ensamblado y ejecución se registran según las herramientas y el host disponibles, como explica el [README](../README.md#ejecución-de-las-pruebas). Los resultados deben compararse junto con esa configuración: un 100 % con menos pruebas registradas no implica haber realizado los mismos controles.
 
+Si se habilita `CONSTRUIR_GUI`, se añade una prueba de la ventana. La medición de referencia de abajo corresponde a la configuración sin interfaz gráfica; el XML registra la cantidad real de pruebas en cada construcción.
+
 ## Definiciones
 
 - **Mnemónicos y formas:** se cuentan los mnemónicos distintos y las filas de la [matriz de instrucciones](INSTRUCCIONES_SOPORTADAS.md). Una forma es una combinación documentada de instrucción y tipos de operandos; no se cuentan por separado cada registro, inmediato o desplazamiento. Las etiquetas no son instrucciones. Este conteo expresa reglas de traducción implementadas, con las restricciones de la matriz.
